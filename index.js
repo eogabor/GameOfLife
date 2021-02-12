@@ -1,6 +1,9 @@
 //TODO
 //!!KÓD takarítás 
-//!!view optimalizáció -> a render két féle adatot tud lekérni:optimializált(undefined-al jeloljük a nem változott négyzeteket) / teljes || zoom+mozgatás+első betöltés után teljes alapból optimalizált
+
+//!!view optimalizáció -> a render két féle adatot tud lekérni:optimializált(undefined-al jeloljük a nem változott négyzeteket) / teljes || zoom+mozgatás+(első betöltés) után teljes alapból optimalizált
+//Két gridet készítünk a nextgen függvénnyel. Egy teljes iterációt, valamint egy optimalizált változatot a változatlan sejtek undefined maradnak(a számítás nem kerül sokba csak a rajzolás)
+//A render függvény paraméterezhető legyen || legyen egy flag ami jelzi mit kell csinálni: legyen egy optimalizált render ami az optimalizált grid alapján rajzol és legyen egy sima ami az egész pályát újra rajzolja
 //alertbox hibaüzenetekkel
 //optimalizálni a selectálást
 
@@ -15,11 +18,12 @@ function buildGrid(cols, rows) {
 //MODELL
 class Modell {
     constructor(cols, rows) {
-        this.speeds = [25,50,100, 250, 500, 750, 1000, 1500, 2000];
+        this.speeds = [25, 50, 100, 250, 500, 750, 1000, 1500, 2000];
 
         this.cols = cols;
         this.rows = rows;
         this.grid = buildGrid(cols, rows);
+        this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
 
         this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
         this.speed = 4;
@@ -45,7 +49,7 @@ class Modell {
         this.gridLogPush(this.grid.map(arr => [...arr]));
 
         const nextGen = this.grid.map(arr => [...arr]);
-        
+        const optGrid = [...Array(this.cols)].map(e => Array(this.rows));
 
         for (let col = 0; col < this.cols; col++) {
             for (let row = 0; row < this.rows; row++) {
@@ -68,12 +72,16 @@ class Modell {
                 //Ha halott és 3 szomszédja él, újra életre kel
                 if (cell === 1 && (numNeighbours < 2 || numNeighbours > 3)) {
                     nextGen[col][row] = 0;
+                    optGrid[col][row] = 0;
                 } else if (cell === 0 && numNeighbours === 3) {
                     nextGen[col][row] = 1;
+                    optGrid[col][row] = 1;
                 }
             }
         }
+
         this.grid = nextGen;
+        this.optimalizedGrid = optGrid;
     }
 
     start() {//Elindítja a modell működését, abban az esetben, ha álló helyzetben(state=0) van, vagy még nem indult el a működés(state=undefined)
@@ -95,20 +103,26 @@ class Modell {
         return this.grid.map(arr => [...arr]);
     }
 
+    getOptGrid() {
+        return this.optimalizedGrid.map(arr => [...arr]);
+    }
+
     speedUp() {
-        if (this.speed > 0) {
+        if (this.state===1 && this.speed > 0) {
             this.speed -= 1;
+            this.stop();
+            this.start();
         }
-        this.stop();
-        this.start();
+        
     }
 
     slowDown() {
-        if (this.speed < 8) {
+        if (this.state===1 && this.speed < 8) {
             this.speed += 1;
+            this.stop();
+            this.start();
         }
-        this.stop();
-        this.start();
+        
     }
 
     manageCell(x, y) {
@@ -201,7 +215,7 @@ class Modell {
             if (returnValue) {//ha visszatér valamivel akkor állítani kell a gridlogon
                 this.grid = returnValue;
             }
-        }else{
+        } else {
             //HIBA ÜZENET
         }
 
@@ -243,6 +257,8 @@ class View {
             startY: undefined,
         };
 
+        this.redrawFlag = 1; //Ha a flag értéke 1 akkor az egész gridet rajzoljuk ki, ha 0 akkor csak a módosult cellákat
+
         //EVENT LISTENERS
         document.getElementById('maincanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
         document.getElementById('left').addEventListener('click', (e) => this.moveView(e));
@@ -252,6 +268,8 @@ class View {
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
         document.getElementById('select').addEventListener('click', () => this.switchSelectMode());
+        document.getElementById('start').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('stop').addEventListener('click', () => this.setReDrawFlag());
     }
 
     handleZoom(canvas, e) {
@@ -272,6 +290,7 @@ class View {
         }
 
         if (this.zoom + wheel >= 0 && this.zoom + wheel <= 4) {
+            this.redrawFlag = 1;
             if (e.deltaY > 0) {
                 this.zoom -= 1;
             } else {
@@ -297,6 +316,7 @@ class View {
     }
 
     moveView(e) {
+        this.redrawFlag = 1;
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
 
@@ -335,6 +355,8 @@ class View {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode !== 0) return; //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
 
+        this.redrawFlag=1;
+
         let currResolution = this.resolutions[this.zoom];
 
         const rect = canvas.getBoundingClientRect();
@@ -345,6 +367,7 @@ class View {
     }
 
     switchSelectMode() {
+        debugger;
         if (this.modell.state !== 0) return;//alert hogy állítsa meg a kijelöléshez
 
 
@@ -367,6 +390,7 @@ class View {
             }
 
             this.selectMode = 0;
+            this.redrawFlag = 1;
             document.getElementById('start').disabled = false;
         } else if (this.selectMode === 0) {//SELECT MÓD BERAK
             this.selectMode = 1;
@@ -374,7 +398,7 @@ class View {
         }
 
 
-        console.log(this.selectMode);
+        //console.log(this.selectMode);
     }
 
     canvasSelectClick(canvas, e) {
@@ -459,7 +483,15 @@ class View {
     }
 
     render() {
-        let grid = this.modell.getGrid();
+        let grid;
+        //optimalizáció
+        if (this.redrawFlag === 1 || this.selectMode !== 0) {
+            grid = this.modell.getGrid();
+            this.redrawFlag = 0;
+        } else {
+            grid = this.modell.getOptGrid();
+        }
+
 
         let xMin = this.selectedArea.xMin;
         let xMax = this.selectedArea.xMax;
@@ -488,21 +520,23 @@ class View {
             for (let row = 0; row < currRows; row++) {
                 const cell = grid[col + this.renderStartX][row + this.renderStartY];
                 //console.log(cell);
+                if (cell !== undefined) {
+                    this.ctx.beginPath();
+                    this.ctx.rect(col * currResolution, row * currResolution, currResolution, currResolution);
 
-                this.ctx.beginPath();
-                this.ctx.rect(col * currResolution, row * currResolution, currResolution, currResolution);
+                    if (cell === 0) {
+                        this.ctx.fillStyle = "white";
+                    } else if (cell === 1) {
+                        this.ctx.fillStyle = "black";
+                    } else {
+                        this.ctx.fillStyle = "yellow";
+                    }
 
-                if (cell === 0) {
-                    this.ctx.fillStyle = "white";
-                } else if (cell === 1) {
-                    this.ctx.fillStyle = "black";
-                } else {
-                    this.ctx.fillStyle = "yellow";
+                    this.ctx.fill();
+
+                    if (state !== 1) this.ctx.stroke();
                 }
 
-                this.ctx.fill();
-
-                if (state !== 1) this.ctx.stroke();
             }
         }
     }
@@ -534,6 +568,10 @@ class View {
                 this.selectctx.fill();
             }
         }
+    }
+
+    setReDrawFlag() {
+        this.redrawFlag = 1;
     }
 
     animate() {
