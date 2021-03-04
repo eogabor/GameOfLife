@@ -1,11 +1,18 @@
+//import basicPatterns from '../basicPatterns.js';
+
 //TODO
 //!!KÓD takarítás 
 
-//!!view optimalizáció -> a render két féle adatot tud lekérni:optimializált(undefined-al jeloljük a nem változott négyzeteket) / teljes || zoom+mozgatás+(első betöltés) után teljes alapból optimalizált
-//Két gridet készítünk a nextgen függvénnyel. Egy teljes iterációt, valamint egy optimalizált változatot a változatlan sejtek undefined maradnak(a számítás nem kerül sokba csak a rajzolás)
-//A render függvény paraméterezhető legyen || legyen egy flag ami jelzi mit kell csinálni: legyen egy optimalizált render ami az optimalizált grid alapján rajzol és legyen egy sima ami az egész pályát újra rajzolja
+//408-sor : alakzatok felhelyezése a gridre ->lista aminek elemei az elérhető alakzatok (basic+userscustom) -> játék megállítása esetén lehet listaelemet választani -> lista elem kiválasztása után az megjelenik a selectedArea-ban -> lehet elindítani, megállítani, visszatekerni, előre tekerni
+//kialakítani a mentést és betöltést a local storage-ba
+//redraw flag-et ne a gomb eseménykezelője tegye fel, mert lehet h a számítás még nem történik meg a következő render előtt, lásd -1 -> esemény közölje a view-el hogy újrarajzolásra van szükség, mikor már minden számítás végbement
+//useractionok undo/redo
 //alertbox hibaüzenetekkel
-//optimalizálni a selectálást
+//optimalizálni a selectálást és patternfelrakást -> elmenteni az előző selectált illetve patternel megjelölt cellák helyét és a következő rendernél ezeket törölni + csak optimalizált nézetet renderelni
+//canvason az x,y koordináta lekérő algoritmust függvényesíteni
+function $(element) {
+    return document.getElementById(element);
+}
 
 function buildGrid(cols, rows) {
     return new Array(cols).fill(null).map(
@@ -43,7 +50,6 @@ class Modell {
     }
 
     nextGen() {
-        //debugger;
         //console.log(this.speeds[this.speed]);
 
         this.gridLogPush(this.grid.map(arr => [...arr]));
@@ -108,21 +114,21 @@ class Modell {
     }
 
     speedUp() {
-        if (this.state===1 && this.speed > 0) {
+        if (this.state === 1 && this.speed > 0) {
             this.speed -= 1;
             this.stop();
             this.start();
         }
-        
+
     }
 
     slowDown() {
-        if (this.state===1 && this.speed < 8) {
+        if (this.state === 1 && this.speed < 8) {
             this.speed += 1;
             this.stop();
             this.start();
         }
-        
+
     }
 
     manageCell(x, y) {
@@ -136,12 +142,13 @@ class Modell {
     }
 
     setSelectedArea(selectedArea) {
-        this.selectedArea = {
-            xMin: selectedArea.xMin,
-            xMax: selectedArea.xMax,
-            yMin: selectedArea.yMin,
-            yMax: selectedArea.yMax,
-        };
+        let sizeX = selectedArea.xMax - selectedArea.xMin + 1;
+        let sizeY = selectedArea.yMax - selectedArea.yMin + 1;
+        this.selectedArea = new Array(sizeX).fill(null).map(
+            (col, Xindex) => new Array(sizeY).fill(null).map(
+                (row, Yindex) => this.grid[selectedArea.xMin + Xindex][selectedArea.yMin + Yindex]
+            )
+        );
     }
 
     delSelectedArea() {
@@ -152,15 +159,7 @@ class Modell {
         if (this.selectedArea === undefined) {
             return undefined;
         } else {
-            let sizeX = this.selectedArea.xMax - this.selectedArea.xMin + 1;
-            let sizeY = this.selectedArea.yMax - this.selectedArea.yMin + 1;
-            let result = new Array(sizeX).fill(null).map(
-                (col, Xindex) => new Array(sizeY).fill(null).map(
-                    (row, Yindex) => this.grid[this.selectedArea.xMin + Xindex][this.selectedArea.yMin + Yindex]
-                )
-            );
-
-            return result;
+            return this.selectedArea.map(arr => [...arr]);
         }
 
 
@@ -257,7 +256,20 @@ class View {
             startY: undefined,
         };
 
+        this.patternData = {
+            startPointX: undefined,
+            startPointY: undefined,
+            patternGrid: undefined,
+        }
+
+
+        this.patternMode = 0;
+
+        this.Persistence = new Persistence();
+
         this.redrawFlag = 1; //Ha a flag értéke 1 akkor az egész gridet rajzoljuk ki, ha 0 akkor csak a módosult cellákat
+
+        this.renderBin = [];
 
         //EVENT LISTENERS
         document.getElementById('maincanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
@@ -270,6 +282,13 @@ class View {
         document.getElementById('select').addEventListener('click', () => this.switchSelectMode());
         document.getElementById('start').addEventListener('click', () => this.setReDrawFlag());
         document.getElementById('stop').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('-10').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('-1').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('+1').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('+10').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById("patternList").addEventListener('click', (e) => this.patternModeOn(e));
+        document.getElementById("stopPattern").addEventListener('click', () => this.patternModeOff());
+
     }
 
     handleZoom(canvas, e) {
@@ -355,7 +374,7 @@ class View {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode !== 0) return; //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
 
-        this.redrawFlag=1;
+        this.redrawFlag = 1;
 
         let currResolution = this.resolutions[this.zoom];
 
@@ -363,11 +382,27 @@ class View {
         const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
         const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
 
-        this.modell.manageCell(x, y);
+        if (this.patternMode === 0) {
+            this.modell.manageCell(x, y);
+        } else {
+            let grid = this.modell.getGrid();
+            let patternStartX = this.patternData.startPointX;
+            let patternStartY = this.patternData.startPointY;
+            let patternGrid = this.patternData.patternGrid;
+
+
+            for (let ix = patternStartX; ix < patternStartX + patternGrid.length; ix++) {
+                for (let iy = patternStartY; iy < patternStartY + patternGrid[0].length; iy++) {
+                    if (patternGrid[ix - patternStartX][iy - patternStartY] === 1 && (ix < this.cols && iy < this.rows) && grid[ix][iy] === 0) {
+                        this.modell.manageCell(ix, iy);
+                    }
+                }
+            }
+            this.patternModeOff();
+        }
     }
 
     switchSelectMode() {
-        debugger;
         if (this.modell.state !== 0) return;//alert hogy állítsa meg a kijelöléshez
 
 
@@ -399,6 +434,44 @@ class View {
 
 
         //console.log(this.selectMode);
+    }
+
+    patternModeOff() {
+        document.getElementById('start').disabled = false;
+        document.getElementById('stopPattern').disabled = true;
+        document.getElementById('maincanvas').removeEventListener('mousemove', this.patternHandler);
+        this.patternData = {
+            startPointX: undefined,
+            startPointY: undefined,
+            patternGrid: undefined,
+        }
+        this.patternMode = 0;
+    }
+
+    patternModeOn(e) {
+        if (this.modell.state !== 0) return;//alert hogy állítsa meg a kijelöléshez
+        if (!e.target.classList.contains("patternListItem")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
+
+        document.getElementById('start').disabled = true;
+        document.getElementById('stopPattern').disabled = false;
+
+        let pattern = this.Persistence.getPattern(e.target.id.split("-")[1]);
+        this.patternData.patternGrid = pattern;
+        this.patternMode = 1;
+        document.getElementById('maincanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
+    }
+
+    patternHandler = (e) => this.movePattern(this.canvas, e);
+
+    movePattern(canvas, e) {
+        let currResolution = this.resolutions[this.zoom];
+
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
+        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+
+        this.patternData.startPointX = x;
+        this.patternData.startPointY = y;
     }
 
     canvasSelectClick(canvas, e) {
@@ -484,15 +557,27 @@ class View {
 
     render() {
         let grid;
+        let wholeGrid = this.modell.getGrid();
         //optimalizáció
-        if (this.redrawFlag === 1 || this.selectMode !== 0) {
+        if (this.redrawFlag === 1 /*|| this.selectMode !== 0 || this.patternMode !== 0*/) {
             grid = this.modell.getGrid();
+
             this.redrawFlag = 0;
+            this.renderBin = [];
         } else {
             grid = this.modell.getOptGrid();
+
+            for (let i = 0; i < this.renderBin.length; i++) {
+                debugger;
+                let x = this.renderBin[i][0];
+                let y = this.renderBin[i][1];
+                grid[x][y] = 0;
+            }
+            this.renderBin = [];
         }
 
 
+        //Select körvonal renderelése
         let xMin = this.selectedArea.xMin;
         let xMax = this.selectedArea.xMax;
         let yMin = this.selectedArea.yMin;
@@ -500,11 +585,29 @@ class View {
 
         for (let ix = xMin; ix <= xMax; ix++) {
             for (let iy = yMin; iy <= yMax; iy++) {
-                if (grid[ix][iy] === 0 /*csak a fehéreket rakja sárgára*/ && (ix === xMin || ix === xMax || iy === yMin || iy === yMax)) {
+                if ((wholeGrid[ix][iy] === 0) /*csak a fehéreket rakja sárgára*/ && (ix === xMin || ix === xMax || iy === yMin || iy === yMax)) {
                     grid[ix][iy] = 2;
+                    this.renderBin.push([ix, iy]);//render optimalizáció miatt->a következő rendernél ezek törlésre kerülnek, hogy ne kelljen az egészet újra lekérni -> smooth select és pattern move
                 };
             }
         }
+
+        //pattern felrakás renderelése
+        let patternStartX = this.patternData.startPointX;
+        let patternStartY = this.patternData.startPointY;
+        let patternGrid = this.patternData.patternGrid;
+
+        if (this.patternMode === 1) {
+            for (let ix = patternStartX; ix < patternStartX + patternGrid.length; ix++) {
+                for (let iy = patternStartY; iy < patternStartY + patternGrid[0].length; iy++) {
+                    if (patternGrid[ix - patternStartX][iy - patternStartY] === 1 && (ix < this.cols && iy < this.rows) && (wholeGrid[ix][iy] === 0)) {
+                        grid[ix][iy] = 3;
+                        this.renderBin.push([ix, iy]);
+                    }
+                }
+            }
+        }
+
         //console.log(grid);
         let currResolution = this.resolutions[this.zoom];
         //console.log(currResolution);
@@ -528,8 +631,10 @@ class View {
                         this.ctx.fillStyle = "white";
                     } else if (cell === 1) {
                         this.ctx.fillStyle = "black";
-                    } else {
+                    } else if (cell == 2) {
                         this.ctx.fillStyle = "yellow";
+                    } else if (cell == 3) {
+                        this.ctx.fillStyle = "blue";
                     }
 
                     this.ctx.fill();
@@ -585,6 +690,45 @@ class View {
         this.render();
         this.renderSelect();
         this.animate();
+    }
+}
+
+//Persistence
+class Persistence {
+    constructor() {
+        this.dataLoaded = 0;
+        //Alapértelmezet alakzatok betöltése
+        fetch('basic.json')
+            .then(response => response.json())
+            .then(data => {
+                this.patternList = data;
+                for (let i = 0; i < data.length; i++) {
+                    this.addListElement(data[i]);
+                }
+                this.dataLoaded = 1;
+            });
+    }
+
+    addListElement(element) {
+        let iDiv = document.createElement('div');
+        iDiv.id = "listElement-" + element.name;
+        iDiv.innerHTML = element.name;
+        iDiv.className = "patternListItem";
+
+        $("patternList").appendChild(iDiv);
+    }
+
+    getPattern(patternName) {
+        if (this.dataLoaded == 0) {
+            //ALERT
+            return;
+        }
+
+        for (let i = 0; i < this.patternList.length; i++) {
+            if (this.patternList[i].name === patternName) {
+                return this.patternList[i].pattern;
+            }
+        }
     }
 }
 
