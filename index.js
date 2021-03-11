@@ -1,15 +1,12 @@
-//import basicPatterns from '../basicPatterns.js';
-
 //TODO
 //!!KÓD takarítás 
 
-//408-sor : alakzatok felhelyezése a gridre ->lista aminek elemei az elérhető alakzatok (basic+userscustom) -> játék megállítása esetén lehet listaelemet választani -> lista elem kiválasztása után az megjelenik a selectedArea-ban -> lehet elindítani, megállítani, visszatekerni, előre tekerni
 //kialakítani a mentést és betöltést a local storage-ba
-//redraw flag-et ne a gomb eseménykezelője tegye fel, mert lehet h a számítás még nem történik meg a következő render előtt, lásd -1 -> esemény közölje a view-el hogy újrarajzolásra van szükség, mikor már minden számítás végbement
 //useractionok undo/redo
 //alertbox hibaüzenetekkel
 //optimalizálni a selectálást és patternfelrakást -> elmenteni az előző selectált illetve patternel megjelölt cellák helyét és a következő rendernél ezeket törölni + csak optimalizált nézetet renderelni
 //canvason az x,y koordináta lekérő algoritmust függvényesíteni
+
 function $(element) {
     return document.getElementById(element);
 }
@@ -30,13 +27,15 @@ class Modell {
         this.cols = cols;
         this.rows = rows;
         this.grid = buildGrid(cols, rows);
+        this.gridLog = [];
+    
         this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
 
         this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
         this.speed = 4;
         this.intervalID = undefined;
 
-        this.gridLog = [];
+        this.redrawEventTarget = new EventTarget();
 
         //EVENT LISTENERS
         document.getElementById('start').addEventListener('click', () => this.start());
@@ -51,9 +50,7 @@ class Modell {
 
     nextGen() {
         //console.log(this.speeds[this.speed]);
-
         this.gridLogPush(this.grid.map(arr => [...arr]));
-
         const nextGen = this.grid.map(arr => [...arr]);
         const optGrid = [...Array(this.cols)].map(e => Array(this.rows));
 
@@ -87,6 +84,7 @@ class Modell {
         }
 
         this.grid = nextGen;
+
         this.optimalizedGrid = optGrid;
     }
 
@@ -136,8 +134,10 @@ class Modell {
 
         if (cell === 0) {
             this.grid[x][y] = 1;
+            this.optimalizedGrid[x][y] = 1;
         } else if (cell === 1) {
             this.grid[x][y] = 0;
+            this.optimalizedGrid[x][y] = 0;
         }
     }
 
@@ -181,6 +181,7 @@ class Modell {
             case "-1":
                 if (this.gridLog.length >= 1) {
                     let res = this.gridLog.pop();
+
                     return res;
                 }
                 //HIBA ÜZENET
@@ -188,12 +189,14 @@ class Modell {
 
             case "+1":
                 this.nextGen();
+                this.dispatchReDrawEvent();
                 return false;
 
             case "+10":
                 for (let i = 0; i < 10; i++) {
                     this.nextGen();
                 }
+                this.dispatchReDrawEvent();
                 return false;
         }
     }
@@ -212,22 +215,29 @@ class Modell {
         if (this.state === 0) {
             let returnValue = this.gridLogGet(e.target.id);
             if (returnValue) {//ha visszatér valamivel akkor állítani kell a gridlogon
-                this.grid = returnValue;
+                debugger;
+                this.grid = returnValue.map(arr => [...arr]);
+                this.optimalizedGrid = returnValue.map(arr => [...arr]);
+                this.dispatchReDrawEvent();
             }
         } else {
             //HIBA ÜZENET
         }
 
     }
+
+    dispatchReDrawEvent(){
+        this.redrawEventTarget.dispatchEvent(new Event('redrawEvent'));
+    }
 }
 
 //VIEW
 class View {
-    constructor(canvas, modell, width, height, selectCanvas) {
+    constructor(canvas, width, height, selectCanvas) {
         this.resolutions = [4, 8, 20, 40, 100];
 
         this.canvas = canvas;
-        this.modell = modell;
+        this.modell = new Modell(200, 150);
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
@@ -280,15 +290,12 @@ class View {
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
         document.getElementById('select').addEventListener('click', () => this.switchSelectMode());
-        document.getElementById('start').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('stop').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('-10').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('-1').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('+1').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('+10').addEventListener('click', () => this.setReDrawFlag());
         document.getElementById("patternList").addEventListener('click', (e) => this.patternModeOn(e));
         document.getElementById("stopPattern").addEventListener('click', () => this.patternModeOff());
+        document.getElementById('start').addEventListener('click', () => this.setReDrawFlag());
+        document.getElementById('stop').addEventListener('click', () => this.setReDrawFlag());
 
+        this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
     }
 
     handleZoom(canvas, e) {
@@ -309,7 +316,7 @@ class View {
         }
 
         if (this.zoom + wheel >= 0 && this.zoom + wheel <= 4) {
-            this.redrawFlag = 1;
+            this.setReDrawFlag();
             if (e.deltaY > 0) {
                 this.zoom -= 1;
             } else {
@@ -335,7 +342,7 @@ class View {
     }
 
     moveView(e) {
-        this.redrawFlag = 1;
+        this.setReDrawFlag();
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
 
@@ -374,7 +381,6 @@ class View {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode !== 0) return; //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
 
-        this.redrawFlag = 1;
 
         let currResolution = this.resolutions[this.zoom];
 
@@ -398,12 +404,13 @@ class View {
                     }
                 }
             }
-            this.patternModeOff();
         }
     }
 
     switchSelectMode() {
-        if (this.modell.state !== 0) return;//alert hogy állítsa meg a kijelöléshez
+        if (this.modell.state !== 0 || this.patternMode !== 0) {
+            return;//alert hogy állítsa meg a kijelöléshez
+        }
 
 
         if (this.selectMode !== 0) {//SELECT MÓD KIVESZ
@@ -425,7 +432,7 @@ class View {
             }
 
             this.selectMode = 0;
-            this.redrawFlag = 1;
+            this.setReDrawFlag();
             document.getElementById('start').disabled = false;
         } else if (this.selectMode === 0) {//SELECT MÓD BERAK
             this.selectMode = 1;
@@ -446,10 +453,14 @@ class View {
             patternGrid: undefined,
         }
         this.patternMode = 0;
+
+        this.selectctx.clearRect(0, 0, 200, 200);
     }
 
     patternModeOn(e) {
-        if (this.modell.state !== 0) return;//alert hogy állítsa meg a kijelöléshez
+        if (this.modell.state !== 0 || this.selectMode !== 0) {
+            return;//alert hogy állítsa meg a kijelöléshez
+        }
         if (!e.target.classList.contains("patternListItem")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
 
         document.getElementById('start').disabled = true;
@@ -576,7 +587,6 @@ class View {
             this.renderBin = [];
         }
 
-
         //Select körvonal renderelése
         let xMin = this.selectedArea.xMin;
         let xMax = this.selectedArea.xMax;
@@ -671,8 +681,51 @@ class View {
                 }
 
                 this.selectctx.fill();
+                this.selectctx.stroke();
+
             }
         }
+    }
+
+    renderPatternSelect() {
+        if (this.patternMode != 1) return;
+        debugger;
+
+        let grid = this.patternData.patternGrid;
+        let sizeX = grid.length + 2;
+        let sizeY = grid[0].length + 2;
+
+        let maxSize = sizeX > sizeY ? sizeX : sizeY;
+        let resoulution = Math.floor(200 / maxSize);
+
+        for (let col = 0; col < sizeX; col++) {
+            for (let row = 0; row < sizeY; row++) {
+                if (col === 0 || col === sizeX - 1 || row === 0 || row === sizeY - 1) {
+                    this.selectctx.beginPath();
+                    this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
+                    this.selectctx.fillStyle = "white";
+                    this.selectctx.fill();
+                    this.selectctx.stroke();
+
+                } else {
+                    const cell = grid[col - 1][row - 1];
+
+                    this.selectctx.beginPath();
+                    this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
+
+                    if (cell === 0) {
+                        this.selectctx.fillStyle = "white";
+                    } else {
+                        this.selectctx.fillStyle = "black";
+                    }
+
+                    this.selectctx.fill();
+                    this.selectctx.stroke();
+                }
+
+            }
+        }
+
     }
 
     setReDrawFlag() {
@@ -682,6 +735,7 @@ class View {
     animate() {
         this.render();
         this.renderSelect();
+        this.renderPatternSelect();
         requestAnimationFrame(() => this.animate());
     }
 
@@ -736,6 +790,6 @@ let M = new Modell(200, 150);
 
 const canvas = document.getElementById('maincanvas');
 const selectCanvas = document.getElementById('selectCanvas');
-let V = new View(canvas, M, 800, 600, selectCanvas);
+let V = new View(canvas, 800, 600, selectCanvas);
 
 V.start();
