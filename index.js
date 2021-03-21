@@ -4,8 +4,6 @@
 //kialakítani a mentést és betöltést a local storage-ba
 //useractionok undo/redo
 //alertbox hibaüzenetekkel
-//optimalizálni a selectálást és patternfelrakást -> elmenteni az előző selectált illetve patternel megjelölt cellák helyét és a következő rendernél ezeket törölni + csak optimalizált nézetet renderelni
-//canvason az x,y koordináta lekérő algoritmust függvényesíteni
 
 function $(element) {
     return document.getElementById(element);
@@ -19,6 +17,10 @@ function buildGrid(cols, rows) {
     );
 }
 
+function showAlert(alertString) {
+    $("alertBox").innerHTML = alertString;
+}
+
 //MODELL
 class Modell {
     constructor(cols, rows) {
@@ -28,7 +30,7 @@ class Modell {
         this.rows = rows;
         this.grid = buildGrid(cols, rows);
         this.gridLog = [];
-    
+
         this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
 
         this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
@@ -92,14 +94,22 @@ class Modell {
         if (this.state === 0 || this.state === undefined) {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
+            document.getElementById('start').disabled = true;
+            document.getElementById('stop').disabled = false;
+        } else {
+            showAlert("The simulation must be stopped before you can start it!");
         }
-
     }
 
     stop() {
+        debugger;
         if (this.state === 1) {
             clearInterval(this.intervalID);
             this.state = 0;
+            document.getElementById('start').disabled = false;
+            document.getElementById('stop').disabled = true;
+        } else {
+            showAlert("The simulation must be running before you can stop it!")
         }
     }
 
@@ -116,6 +126,8 @@ class Modell {
             this.speed -= 1;
             this.stop();
             this.start();
+        } else {
+            showAlert("You have reached maximum iteration speed!");
         }
 
     }
@@ -125,6 +137,8 @@ class Modell {
             this.speed += 1;
             this.stop();
             this.start();
+        } else {
+            showAlert("You have reached minimal iteration speed!");
         }
 
     }
@@ -161,8 +175,6 @@ class Modell {
         } else {
             return this.selectedArea.map(arr => [...arr]);
         }
-
-
     }
 
     gridLogGet(parameter) {
@@ -175,7 +187,7 @@ class Modell {
                     }
                     return res;
                 }
-                //HIBA ÜZENET
+                showAlert("Not enough saved states left...");//HIBA ÜZENET
                 return undefined;
 
             case "-1":
@@ -184,7 +196,7 @@ class Modell {
 
                     return res;
                 }
-                //HIBA ÜZENET
+                showAlert("No more saved states left...");
                 return undefined;
 
             case "+1":
@@ -221,14 +233,15 @@ class Modell {
                 this.dispatchReDrawEvent();
             }
         } else {
-            //HIBA ÜZENET
+            showAlert("You must stop the simulation, to manage time!")
         }
 
     }
 
-    dispatchReDrawEvent(){
+    dispatchReDrawEvent() {
         this.redrawEventTarget.dispatchEvent(new Event('redrawEvent'));
     }
+
 }
 
 //VIEW
@@ -379,7 +392,11 @@ class View {
 
     canvasCellClick(canvas, e) {
         let modellState = this.modell.state;
-        if (modellState !== 0 || this.selectMode !== 0) return; //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
+        if (modellState !== 0 || this.selectMode !== 0) {
+            //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
+            showAlert("You must stop the simulation, to manipulate cells.");
+            return;
+        }
 
 
         let currResolution = this.resolutions[this.zoom];
@@ -409,6 +426,7 @@ class View {
 
     switchSelectMode() {
         if (this.modell.state !== 0 || this.patternMode !== 0) {
+            showAlert("You must stop the simulation, before entering select mode.")
             return;//alert hogy állítsa meg a kijelöléshez
         }
 
@@ -438,9 +456,6 @@ class View {
             this.selectMode = 1;
             document.getElementById('start').disabled = true;
         }
-
-
-        //console.log(this.selectMode);
     }
 
     patternModeOff() {
@@ -459,6 +474,7 @@ class View {
 
     patternModeOn(e) {
         if (this.modell.state !== 0 || this.selectMode !== 0) {
+            showAlert("You must stop the simulation, to put on a pattern.")
             return;//alert hogy állítsa meg a kijelöléshez
         }
         if (!e.target.classList.contains("patternListItem")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
@@ -535,6 +551,7 @@ class View {
                 this.selectedArea.xMin = x;
                 this.selectedArea.xMax = startX;
             } else {
+                showAlert("The selected area can be maximum 50 cells wide.")
                 //HIBA ÜZENET : NEM LEHET 100nál szélesebbet kijelölni
             }
         }
@@ -543,7 +560,7 @@ class View {
                 this.selectedArea.xMax = x;
                 this.selectedArea.xMin = startX;
             } else {
-                //HIBA
+                showAlert("The selected area can be maximum 50 cells high.")
             }
         }
         if (y < yMin) {
@@ -570,7 +587,7 @@ class View {
         let grid;
         let wholeGrid = this.modell.getGrid();
         //optimalizáció
-        if (this.redrawFlag === 1 /*|| this.selectMode !== 0 || this.patternMode !== 0*/) {
+        if (this.redrawFlag === 1) {
             grid = this.modell.getGrid();
 
             this.redrawFlag = 0;
@@ -774,7 +791,7 @@ class Persistence {
 
     getPattern(patternName) {
         if (this.dataLoaded == 0) {
-            //ALERT
+            showAlert("this pattern haven't loaded yet.")
             return;
         }
 
