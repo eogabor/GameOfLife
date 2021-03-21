@@ -1,9 +1,10 @@
 //TODO
 //!!KÓD takarítás 
 
-//kialakítani a mentést és betöltést a local storage-ba
-//useractionok undo/redo
-//alertbox hibaüzenetekkel
+// useractionok undo/redo✓
+// kialakítani a mentést és betöltést a local storage-ba✓ 
+// menteni kívánt alakzat nevének validálása
+// üres/random indítás elkülönítése
 
 function $(element) {
     return document.getElementById(element);
@@ -40,14 +41,14 @@ class Modell {
         this.redrawEventTarget = new EventTarget();
 
         //EVENT LISTENERS
-        document.getElementById('start').addEventListener('click', () => this.start());
-        document.getElementById('stop').addEventListener('click', () => this.stop());
-        document.getElementById('speedUp').addEventListener('click', () => this.speedUp());
-        document.getElementById('slowDown').addEventListener('click', () => this.slowDown());
-        document.getElementById('-10').addEventListener('click', (e) => this.timeManagment(e));
-        document.getElementById('-1').addEventListener('click', (e) => this.timeManagment(e));
-        document.getElementById('+1').addEventListener('click', (e) => this.timeManagment(e));
-        document.getElementById('+10').addEventListener('click', (e) => this.timeManagment(e));
+        $('start').addEventListener('click', () => this.start());
+        $('stop').addEventListener('click', () => this.stop());
+        $('speedUp').addEventListener('click', () => this.speedUp());
+        $('slowDown').addEventListener('click', () => this.slowDown());
+        $('-10').addEventListener('click', (e) => this.timeManagment(e));
+        $('-1').addEventListener('click', (e) => this.timeManagment(e));
+        $('+1').addEventListener('click', (e) => this.timeManagment(e));
+        $('+10').addEventListener('click', (e) => this.timeManagment(e));
     }
 
     nextGen() {
@@ -94,20 +95,19 @@ class Modell {
         if (this.state === 0 || this.state === undefined) {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
-            document.getElementById('start').disabled = true;
-            document.getElementById('stop').disabled = false;
+            $('start').disabled = true;
+            $('stop').disabled = false;
         } else {
             showAlert("The simulation must be stopped before you can start it!");
         }
     }
 
     stop() {
-        debugger;
         if (this.state === 1) {
             clearInterval(this.intervalID);
             this.state = 0;
-            document.getElementById('start').disabled = false;
-            document.getElementById('stop').disabled = true;
+            $('start').disabled = false;
+            $('stop').disabled = true;
         } else {
             showAlert("The simulation must be running before you can stop it!")
         }
@@ -227,7 +227,6 @@ class Modell {
         if (this.state === 0) {
             let returnValue = this.gridLogGet(e.target.id);
             if (returnValue) {//ha visszatér valamivel akkor állítani kell a gridlogon
-                debugger;
                 this.grid = returnValue.map(arr => [...arr]);
                 this.optimalizedGrid = returnValue.map(arr => [...arr]);
                 this.dispatchReDrawEvent();
@@ -294,19 +293,25 @@ class View {
 
         this.renderBin = [];
 
+        this.userActions = [];
+        this.redoArray = [];
+
         //EVENT LISTENERS
-        document.getElementById('maincanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
-        document.getElementById('left').addEventListener('click', (e) => this.moveView(e));
-        document.getElementById('up').addEventListener('click', (e) => this.moveView(e));
-        document.getElementById('down').addEventListener('click', (e) => this.moveView(e));
-        document.getElementById('right').addEventListener('click', (e) => this.moveView(e));
+        $('maincanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
+        $('left').addEventListener('click', (e) => this.moveView(e));
+        $('up').addEventListener('click', (e) => this.moveView(e));
+        $('down').addEventListener('click', (e) => this.moveView(e));
+        $('right').addEventListener('click', (e) => this.moveView(e));
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
         document.querySelector('canvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
-        document.getElementById('select').addEventListener('click', () => this.switchSelectMode());
-        document.getElementById("patternList").addEventListener('click', (e) => this.patternModeOn(e));
-        document.getElementById("stopPattern").addEventListener('click', () => this.patternModeOff());
-        document.getElementById('start').addEventListener('click', () => this.setReDrawFlag());
-        document.getElementById('stop').addEventListener('click', () => this.setReDrawFlag());
+        $('select').addEventListener('click', () => this.switchSelectMode());
+        $("patternList").addEventListener('click', (e) => this.patternModeOn(e));
+        $("stopPattern").addEventListener('click', () => this.patternModeOff());
+        $('start').addEventListener('click', () => this.setReDrawFlag());
+        $('stop').addEventListener('click', () => this.setReDrawFlag());
+        $('undo').addEventListener('click', () => this.undoUserAction());
+        $('redo').addEventListener('click', () => this.redoUserAction());
+        $('saveSelectedArea').addEventListener('click', () => this.saveSelectedArea());
 
         this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
     }
@@ -401,67 +406,92 @@ class View {
 
         let currResolution = this.resolutions[this.zoom];
 
-        const rect = canvas.getBoundingClientRect();
+        const rect = canvas.getBoundingClientRect(); 0
         const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
         const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
 
         if (this.patternMode === 0) {
             this.modell.manageCell(x, y);
+            this.saveUserAction([[x, y]], true);
         } else {
             let grid = this.modell.getGrid();
             let patternStartX = this.patternData.startPointX;
             let patternStartY = this.patternData.startPointY;
             let patternGrid = this.patternData.patternGrid;
 
-
+            let actionArray = [];
             for (let ix = patternStartX; ix < patternStartX + patternGrid.length; ix++) {
                 for (let iy = patternStartY; iy < patternStartY + patternGrid[0].length; iy++) {
                     if (patternGrid[ix - patternStartX][iy - patternStartY] === 1 && (ix < this.cols && iy < this.rows) && grid[ix][iy] === 0) {
                         this.modell.manageCell(ix, iy);
+                        actionArray.push([ix, iy]);
                     }
                 }
             }
+
+            this.saveUserAction(actionArray, true);
         }
     }
 
-    switchSelectMode() {
-        if (this.modell.state !== 0 || this.patternMode !== 0) {
-            showAlert("You must stop the simulation, before entering select mode.")
-            return;//alert hogy állítsa meg a kijelöléshez
+    saveUserAction(actionArray, emptyRedoFlag) {
+        let actionArrayCopy = actionArray.map(arr => [...arr]);
+        if (emptyRedoFlag) {
+            this.redoArray = [];
         }
 
-
-        if (this.selectMode !== 0) {//SELECT MÓD KIVESZ
-
-            if (this.selectMode === 2) {
-                document.getElementById('maincanvas').removeEventListener('mousemove', this.selectHandler);
-
-                this.selectedArea = {
-                    xMin: undefined,
-                    xMax: undefined,
-                    yMin: undefined,
-                    yMax: undefined,
-                    startX: undefined,
-                    startY: undefined,
-                }
-
-                this.modell.delSelectedArea();
-                this.selectctx.clearRect(0, 0, 200, 200);
-            }
-
-            this.selectMode = 0;
-            this.setReDrawFlag();
-            document.getElementById('start').disabled = false;
-        } else if (this.selectMode === 0) {//SELECT MÓD BERAK
-            this.selectMode = 1;
-            document.getElementById('start').disabled = true;
+        if (this.userActions.length < 30) {
+            this.userActions.push(actionArrayCopy);
+        } else {
+            this.userActions.shift();
+            this.userActions.push(actionArrayCopy);
         }
+    }
+
+    undoUserAction() {
+        if (this.modell.state !== 0) {
+            showAlert("You must stop the simulation, to undo/redo actions.");
+        }
+
+        if (this.userActions.length === 0) {
+            showAlert("No more saved actions left.");
+            return;
+        }
+
+        let actionArray = this.userActions.pop();
+        this.redoArray.push(actionArray.map(arr => [...arr]));
+
+        for (let i = 0; i < actionArray.length; i++) {
+            let x = actionArray[i][0];
+            let y = actionArray[i][1];
+            this.modell.manageCell(x, y);
+        }
+    }
+
+    redoUserAction() {
+        if (this.modell.state !== 0) {
+            showAlert("You must stop the simulation, to undo/redo actions.");
+        }
+
+        if (this.redoArray.length === 0) {
+            showAlert("No more redoable actions left.");
+            return;
+        }
+
+        let actionArray = this.redoArray.pop();
+        this.saveUserAction(actionArray, false);
+
+        for (let i = 0; i < actionArray.length; i++) {
+            let x = actionArray[i][0];
+            let y = actionArray[i][1];
+            this.modell.manageCell(x, y);
+        }
+
     }
 
     patternModeOff() {
-        document.getElementById('start').disabled = false;
-        document.getElementById('stopPattern').disabled = true;
-        document.getElementById('maincanvas').removeEventListener('mousemove', this.patternHandler);
+        $('start').disabled = false;
+        $('stopPattern').disabled = true;
+        $('maincanvas').removeEventListener('mousemove', this.patternHandler);
         this.patternData = {
             startPointX: undefined,
             startPointY: undefined,
@@ -479,13 +509,14 @@ class View {
         }
         if (!e.target.classList.contains("patternListItem")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
 
-        document.getElementById('start').disabled = true;
-        document.getElementById('stopPattern').disabled = false;
+        $('start').disabled = true;
+        $('stopPattern').disabled = false;
 
         let pattern = this.Persistence.getPattern(e.target.id.split("-")[1]);
+        this.selectctx.clearRect(0, 0, 200, 200);
         this.patternData.patternGrid = pattern;
         this.patternMode = 1;
-        document.getElementById('maincanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
+        $('maincanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
     }
 
     patternHandler = (e) => this.movePattern(this.canvas, e);
@@ -499,6 +530,40 @@ class View {
 
         this.patternData.startPointX = x;
         this.patternData.startPointY = y;
+    }
+
+    switchSelectMode() {
+        if (this.modell.state !== 0 || this.patternMode !== 0) {
+            showAlert("You must stop the simulation, before entering select mode.")
+            return;//alert hogy állítsa meg a kijelöléshez
+        }
+
+
+        if (this.selectMode !== 0) {//SELECT MÓD KIVESZ
+
+            if (this.selectMode === 2 || this.selectMode === 3) {
+                $('maincanvas').removeEventListener('mousemove', this.selectHandler);
+
+                this.selectedArea = {
+                    xMin: undefined,
+                    xMax: undefined,
+                    yMin: undefined,
+                    yMax: undefined,
+                    startX: undefined,
+                    startY: undefined,
+                }
+
+                this.modell.delSelectedArea();
+                this.selectctx.clearRect(0, 0, 200, 200);
+            }
+
+            this.selectMode = 0;
+            this.setReDrawFlag();
+            $('start').disabled = false;
+        } else if (this.selectMode === 0) {//SELECT MÓD BERAK
+            this.selectMode = 1;
+            $('start').disabled = true;
+        }
     }
 
     canvasSelectClick(canvas, e) {
@@ -520,13 +585,41 @@ class View {
 
             this.selectMode = 2;
 
-            document.getElementById('maincanvas').addEventListener('mousemove', this.selectHandler);
+            $('maincanvas').addEventListener('mousemove', this.selectHandler);
         } else if (this.selectMode === 2) {
-            document.getElementById('maincanvas').removeEventListener('mousemove', this.selectHandler);
+            $('maincanvas').removeEventListener('mousemove', this.selectHandler);
             this.modell.setSelectedArea({ ...this.selectedArea });
+
+            this.selectMode = 3;
         }
 
         //TODO 3-as mód megvalósítása
+    }
+
+    saveSelectedArea() {
+        if (this.selectMode !== 3) {
+            showAlert("You have to select an area, before saving it!");
+            return;
+        }
+
+        let nameInput = $("selectedAreaName").value;
+
+        if (!this.validateName()) return;
+
+        debugger;
+
+        let grid = this.modell.getSelectedArea();
+        this.Persistence.saveSelectedArea({
+            "name": nameInput,
+            "pattern": grid.map(arr => [...arr])
+        });
+
+        this.switchSelectMode();
+        $("selectedAreaName").value = "";
+    }
+
+    validateName(nameString) {
+        return true;
     }
 
     //Hogy le lehessen venni az event listenert
@@ -596,7 +689,6 @@ class View {
             grid = this.modell.getOptGrid();
 
             for (let i = 0; i < this.renderBin.length; i++) {
-                debugger;
                 let x = this.renderBin[i][0];
                 let y = this.renderBin[i][1];
                 grid[x][y] = 0;
@@ -706,7 +798,6 @@ class View {
 
     renderPatternSelect() {
         if (this.patternMode != 1) return;
-        debugger;
 
         let grid = this.patternData.patternGrid;
         let sizeX = grid.length + 2;
@@ -768,19 +859,37 @@ class View {
 class Persistence {
     constructor() {
         this.dataLoaded = 0;
+        this.patternList = [];
         //Alapértelmezet alakzatok betöltése
         fetch('basic.json')
             .then(response => response.json())
             .then(data => {
-                this.patternList = data;
                 for (let i = 0; i < data.length; i++) {
                     this.addListElement(data[i]);
                 }
-                this.dataLoaded = 1;
+                this.dataLoaded++;
             });
+
+        //Local StorageBan tárolt alakzatok betöltése
+        let localData = localStorage.getItem("GOF_savedPatterns");
+
+        if (!localData) {
+            localStorage.setItem("GOF_savedPatterns", "[]");
+            localData="[]";
+        }
+
+        localData = JSON.parse(localData);
+        this.localStorageData = localData;
+        for (let i = 0; i < localData.length; i++) {
+            this.addListElement(localData[i]);
+        }
+
+        this.dataLoaded++;
     }
 
     addListElement(element) {
+        this.patternList.push(element);
+
         let iDiv = document.createElement('div');
         iDiv.id = "listElement-" + element.name;
         iDiv.innerHTML = element.name;
@@ -790,7 +899,7 @@ class Persistence {
     }
 
     getPattern(patternName) {
-        if (this.dataLoaded == 0) {
+        if (this.dataLoaded < 2) {
             showAlert("this pattern haven't loaded yet.")
             return;
         }
@@ -801,12 +910,18 @@ class Persistence {
             }
         }
     }
+
+    saveSelectedArea(pattern) {
+        this.localStorageData.push(pattern);
+        localStorage.setItem("GOF_savedPatterns", JSON.stringify(this.localStorageData));
+        this.addListElement(pattern);
+    }
 }
 
 let M = new Modell(200, 150);
 
-const canvas = document.getElementById('maincanvas');
-const selectCanvas = document.getElementById('selectCanvas');
+const canvas = $('maincanvas');
+const selectCanvas = $('selectCanvas');
 let V = new View(canvas, 800, 600, selectCanvas);
 
 V.start();
