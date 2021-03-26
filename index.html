@@ -7,33 +7,37 @@
 </head>
 
 <body>
-    <canvas id="maincanvas"></canvas>
-    <div id="control">
-        <button id="undo">↩️</button>
-        <button id="redo">🔁</button>
-        <button id="left">←</button>
-        <button id="up">↑</button>
-        <button id="down">↓</button>
-        <button id="right">→</button>
-        <button id="stop">STOP</button>
-        <button id="start">START</button>
-        <button id="slowDown">⏪</button>
-        <button id="speedUp">⏩️</button>
-        <button id="select">⟡</button>
-        <button id="-10">-10</button>
-        <button id="-1">-1</button>
-        <button id="+1">+1</button>
-        <button id="+10">+10</button>
-        <button id="stopPattern">X</button>
+    <button id="randomGame">Random</button>
+    <button id="blankGame">Blank</button>
+    <div id = "GameOfLife">
+        <canvas id="maincanvas"></canvas>
+        <div id="control">
+            <button id="undo">↩️</button>
+            <button id="redo">🔁</button>
+            <button id="left">←</button>
+            <button id="up">↑</button>
+            <button id="down">↓</button>
+            <button id="right">→</button>
+            <button id="stop">STOP</button>
+            <button id="start">START</button>
+            <button id="slowDown">⏪</button>
+            <button id="speedUp">⏩️</button>
+            <button id="select">⟡</button>
+            <button id="-10">-10</button>
+            <button id="-1">-1</button>
+            <button id="+1">+1</button>
+            <button id="+10">+10</button>
+            <button id="stopPattern">X</button>
+        </div>
+        <canvas id="selectCanvas"></canvas>
+        <div id="selectControl">
+            <input type="text" id="selectedAreaName">
+            <button id="saveSelectedArea">Ment</button>
+        </div>
+        <div id="patternList"></div>
+        <div id="alertBox"></div>
     </div>
-    <canvas id="selectCanvas"></canvas>
-    <div id="selectControl">
-        <input type="text" id="selectedAreaName">
-        <button id="saveSelectedArea">Ment</button>
-    </div>
-    <div id="patternList"></div>
-    <div id="alertBox"></div>
-    
+
     <script src="index.js"></script>
 </body>
 

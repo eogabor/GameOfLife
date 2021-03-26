@@ -10,12 +10,18 @@ function $(element) {
     return document.getElementById(element);
 }
 
-function buildGrid(cols, rows) {
-    return new Array(cols).fill(null).map(
-        () => new Array(rows).fill(0).map(
-            () => Math.floor(Math.random() * 2)
-        )
-    );
+function buildGrid(cols, rows, gameType) {
+    if (gameType === "random") {
+        return new Array(cols).fill(null).map(
+            () => new Array(rows).fill(0).map(
+                () => Math.floor(Math.random() * 2)
+            )
+        );
+    } else if (gameType === "blank") {
+        return new Array(cols).fill(null).map(
+            () => new Array(rows).fill(0)
+        );
+    }
 }
 
 function showAlert(alertString) {
@@ -24,12 +30,12 @@ function showAlert(alertString) {
 
 //MODELL
 class Modell {
-    constructor(cols, rows) {
+    constructor(cols, rows, gameType) {
         this.speeds = [25, 50, 100, 250, 500, 750, 1000, 1500, 2000];
 
         this.cols = cols;
         this.rows = rows;
-        this.grid = buildGrid(cols, rows);
+        this.grid = buildGrid(cols, rows, gameType);
         this.gridLog = [];
 
         this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
@@ -245,11 +251,11 @@ class Modell {
 
 //VIEW
 class View {
-    constructor(canvas, width, height, selectCanvas) {
+    constructor(canvas, width, height, selectCanvas, gameType) {
         this.resolutions = [4, 8, 20, 40, 100];
 
         this.canvas = canvas;
-        this.modell = new Modell(200, 150);
+        this.modell = new Modell(200, 150, gameType);
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
@@ -875,7 +881,7 @@ class Persistence {
 
         if (!localData) {
             localStorage.setItem("GOF_savedPatterns", "[]");
-            localData="[]";
+            localData = "[]";
         }
 
         localData = JSON.parse(localData);
@@ -918,10 +924,20 @@ class Persistence {
     }
 }
 
-let M = new Modell(200, 150);
+$("GameOfLife").hidden = true;
 
-const canvas = $('maincanvas');
-const selectCanvas = $('selectCanvas');
-let V = new View(canvas, 800, 600, selectCanvas);
+$("randomGame").addEventListener('click', () => startGame("random"));
+$("blankGame").addEventListener('click', () => startGame("blank"));
 
-V.start();
+
+
+function startGame(gameType) {
+    const canvas = $('maincanvas');
+    const selectCanvas = $('selectCanvas');
+
+    let V = new View(canvas, 800, 600, selectCanvas, gameType);
+    V.start();
+    $("randomGame").hidden = true;
+    $("blankGame").hidden = true;
+    $("GameOfLife").hidden = false;
+}
