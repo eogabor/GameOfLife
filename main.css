@@ -1,0 +1,115 @@
+/*
+CSS RESET
+ http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+*/
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+.mainGrid {
+    display: grid;
+    width: 1530px;
+    height: 930px;
+    grid-template-columns: 1030px 400px;
+    grid-template-rows: 40px 830px 40px;
+    grid-template-areas: "header header" "mainColumn secondaryColumn" "footer footer";
+}
+
+.header {
+    grid-area: header;
+    border: 1px solid black;
+}
+.footer {
+    grid-area: footer;
+    border: 1px solid black;
+}
+
+.mainArea {
+    grid-area: mainColumn;
+    border: 1px solid black;
+    display: grid;
+    grid-template-columns: 15px 1000px 15px;
+    grid-template-rows: 15px 800px 15px;
+    grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar .";
+}
+
+.moveUpBar {
+    grid-area: topBar;
+    border: 1px solid black;
+}
+
+.moveLeftBar {
+    grid-area: leftBar;
+    border: 1px solid black;
+}
+
+.moveRightBar {
+    grid-area: rightBar;
+    border: 1px solid black;
+}
+
+.moveDownBar {
+    grid-area: bottomBar;
+    border: 1px solid black;
+}
+
+.secondaryArea {
+    grid-area: secondaryColumn;
+    border: 1px solid black;
+    display:grid;
+    grid-template-rows:365px 465px;
+    grid-template-areas: "secondaryAreaTop" "secondaryAreaBottom";
+}
+
+.secondaryAreaTop{
+    grid-area:secondaryAreaTop;
+    border:1px solid black;
+}
+
+.secondaryAreaBottom{
+    grid-area: secondaryAreaBottom;
+    border:1px solid black;
+}

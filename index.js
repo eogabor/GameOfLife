@@ -252,10 +252,10 @@ class Modell {
 //VIEW
 class View {
     constructor(canvas, width, height, selectCanvas, gameType) {
-        this.resolutions = [4, 8, 20, 40, 100];
+        this.resolutions = [2,4, 8, 20, 40, 100];
 
         this.canvas = canvas;
-        this.modell = new Modell(200, 150, gameType);
+        this.modell = new Modell(500, 400, gameType);
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
@@ -339,7 +339,7 @@ class View {
             wheel = 1;
         }
 
-        if (this.zoom + wheel >= 0 && this.zoom + wheel <= 4) {
+        if (this.zoom + wheel >= 0 && this.zoom + wheel <= 5) {
             this.setReDrawFlag();
             if (e.deltaY > 0) {
                 this.zoom -= 1;
@@ -764,7 +764,7 @@ class View {
 
                     this.ctx.fill();
 
-                    if (state !== 1) this.ctx.stroke();
+                    if (state !== 1 && this.zoom>0) this.ctx.stroke();
                 }
 
             }
@@ -935,7 +935,7 @@ function startGame(gameType) {
     const canvas = $('maincanvas');
     const selectCanvas = $('selectCanvas');
 
-    let V = new View(canvas, 800, 600, selectCanvas, gameType);
+    let V = new View(canvas, 1000, 800, selectCanvas, gameType);
     V.start();
     $("randomGame").hidden = true;
     $("blankGame").hidden = true;
