@@ -31,7 +31,7 @@ footer, header, hgroup, menu, nav, section {
 	display: block;
 }
 body {
-	line-height: 1;
+    line-height: 1;
 }
 ol, ul {
 	list-style: none;
@@ -51,65 +51,121 @@ table {
 
 .mainGrid {
     display: grid;
-    width: 1530px;
-    height: 930px;
-    grid-template-columns: 1030px 400px;
-    grid-template-rows: 40px 830px 40px;
-    grid-template-areas: "header header" "mainColumn secondaryColumn" "footer footer";
+    width: 1440px;
+    height: 900px;
+    grid-template-columns: 1040px 400px;
+    grid-template-rows: 30px 870px;
+    grid-template-areas: "header header" "mainColumn secondaryColumn";
+    border:3px solid #020204;
 }
 
 .header {
     grid-area: header;
-    border: 1px solid black;
+    background-color: #04131e;
+    border-bottom:1px solid #020204;
 }
 .footer {
     grid-area: footer;
-    border: 1px solid black;
+    background-color:#04131e;
+    border-top:1px solid #020204;
 }
 
 .mainArea {
     grid-area: mainColumn;
-    border: 1px solid black;
+    background-color: #194162;
     display: grid;
-    grid-template-columns: 15px 1000px 15px;
-    grid-template-rows: 15px 800px 15px;
-    grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar .";
+    grid-template-columns: 20px 1000px 20px;
+    grid-template-rows: 20px 800px 20px 30px;
+    grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar ." "mainAreaBottom mainAreaBottom mainAreaBottom";
+}
+
+.moveBar{
+    background-color: #194162;
+    overflow:hidden;
+}
+
+.moveBar:hover{
+    background-color:#8cc6e5;
+    transition: background-color 0.5s;
 }
 
 .moveUpBar {
     grid-area: topBar;
-    border: 1px solid black;
+    border-bottom:1px solid black;
+}
+
+.moveUpBar:hover{
+    margin-left:-20px;
+    margin-right:-20px;
+    border-left:1px solid black;
+    border-right:1px solid black;
 }
 
 .moveLeftBar {
     grid-area: leftBar;
-    border: 1px solid black;
+    border-right:1px solid black;
+}
+
+.moveLeftBar:hover {
+    margin-top:-20px;
+    margin-bottom:-20px;
+    border-top:1px solid black;
+    border-bottom:1px solid black;
 }
 
 .moveRightBar {
     grid-area: rightBar;
-    border: 1px solid black;
+    border-left:1px solid black;
+}
+
+.moveRightBar:hover {
+    margin-top:-20px;
+    margin-bottom:-20px;
+    border-top:1px solid black;
+    border-bottom:1px solid black;
 }
 
 .moveDownBar {
     grid-area: bottomBar;
-    border: 1px solid black;
+    border-top:1px solid black;
 }
 
+.moveDownBar:hover {
+    margin-left:-20px;
+    margin-right:-20px;
+    border-left:1px solid black;
+    border-right:1px solid black;
+}
+
+.mainDisplay{
+    grid-area: mainDisplay;
+    background-color:#020204;
+}
+
+.mainAreaBottom{
+    grid-area: mainAreaBottom;
+    background-color:#04131e;
+    border-top:1px solid #020204;
+}
 .secondaryArea {
     grid-area: secondaryColumn;
-    border: 1px solid black;
+    background-color:#0d2534;
     display:grid;
-    grid-template-rows:365px 465px;
-    grid-template-areas: "secondaryAreaTop" "secondaryAreaBottom";
+    grid-template-rows:365px 400px 105px;
+    grid-template-areas: "secondaryAreaTop" "secondaryAreaMiddle" "secondaryAreaBottom";
+    border-left:1px solid #020204;
 }
-
 .secondaryAreaTop{
     grid-area:secondaryAreaTop;
-    border:1px solid black;
+    border-bottom:1px solid black;
+}
+
+.secondaryAreaMiddle{
+    grid-area: secondaryAreaMiddle;
 }
 
 .secondaryAreaBottom{
     grid-area: secondaryAreaBottom;
-    border:1px solid black;
+    background-color:#04131e;
+    border-top:1px solid #020204;
 }
