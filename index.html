@@ -1,44 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Game of Life</title>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Page Title</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
 </head>
-
 <body>
-    <button id="randomGame">Random</button>
-    <button id="blankGame">Blank</button>
-    <div id = "GameOfLife">
-        <canvas id="maincanvas"></canvas>
-        <div id="control">
-            <button id="undo">↩️</button>
-            <button id="redo">🔁</button>
-            <button id="left">←</button>
-            <button id="up">↑</button>
-            <button id="down">↓</button>
-            <button id="right">→</button>
-            <button id="stop">STOP</button>
-            <button id="start">START</button>
-            <button id="slowDown">⏪</button>
-            <button id="speedUp">⏩️</button>
-            <button id="select">⟡</button>
-            <button id="-10">-10</button>
-            <button id="-1">-1</button>
-            <button id="+1">+1</button>
-            <button id="+10">+10</button>
-            <button id="stopPattern">X</button>
+    <div class="mainGrid">
+        <div class="header">
+            <div id="menuBar">
+                <ul>
+                    <li id="newGameButton">New</li>
+                    <li>Export</li>
+                    <li>Import</li>
+                </ul>
+            </div>
         </div>
-        <canvas id="selectCanvas"></canvas>
-        <div id="selectControl">
-            <input type="text" id="selectedAreaName">
-            <button id="saveSelectedArea">Ment</button>
+        <div class="mainArea">
+            <div id="moveUpBar" class="moveBar moveUpBar"><img id="moveUpIcon" class="moveButtonImage" src="moveUpArrow.png"></div>
+            <div id="moveLeftBar" class="moveBar moveLeftBar"><img id="moveLeftIcon" class="moveButtonImage" src="moveLeftArrow.png"></div>
+            <div class="mainDisplay">
+                <canvas id="mainCanvas" class="mainCanvas"></canvas>
+            </div>
+            <div id="moveRightBar" class="moveBar moveRightBar"><img id="moveRightIcon" class="moveButtonImage" src="moveRightArrow.png"></div>
+            <div id="moveDownBar" class="moveBar moveDownBar"><img id="moveDownIcon" class="moveButtonImage" src="moveDownArrow.png"></div>
+            <div class="controlArea">
+                <div id="stateDisplay"></div>
+                <div id="controlBar" class="controlBar">
+                    <div class="controlBlock">
+                        <button id="stepBackButton" class="controlButton">-</button>
+                        <input id="stepValueInput" type="range" min="1" max="20" step="1">
+                        <button id="stepForwardButton" class="controlButton">+</button>
+                        <input type="text" class="numberInput" id="stepValueDisplay">
+                    </div>
+                    <div class="controlBlock">
+                        <button id="slowDownButton" class="controlButton"><img class="controlIcon" src="slowDownIcon.png"></button>
+                        <button id="startButton" class="controlButton">START</button>
+                        <button id="stopButton" class="controlButton" style="display: none;">STOP</button>
+                        <button id="speedUpButton" class="controlButton"><img class="controlIcon" src="speedUpIcon.png"></button>
+                        
+                    </div>
+                    <div class="controlBlock">
+                        <button id="undoButton" class="controlButton floatLeft"><img class="controlIcon" src="undoIcon.png"></button>
+                        <button id="redoButton" class="controlButton floatLeft"><img class="controlIcon" src="redoIcon.png" alt=""></button>
+                        <button id="selectButton" class="controlButton floatRight">SELECT</button>
+                        <button id="stopPattern" class="controlButton floatRight">X</button>
+                    </div>
+                </div>
+                <div id="mousePositionArea">
+                    <div class="statusBlock statusStaticText">Row:</div>
+                    <div id="rowDisplay" class="statusBlock">25</div>
+                    <div class="statusBlock statusStaticText">Column:</div>
+                    <div id="columnDisplay" class="statusBlock">25</div>
+                </div>
+            </div>
+            <div class="mainAreaBottom">
+                <div class="statusBlock statusStaticText">Game Status:</div>
+                <div id="statusDisplay" class="statusBlock">STOPPED</div>
+                <div class="statusBlock"><img id="statusIcon" class="statusIcon" src="stoppedStatus.png"></div>
+                <div class="statusBlock statusStaticText">Total Iterations:</div>
+                <div id="totalIterationsDisplay" class="statusBlock"></div>
+                <div class="statusBlock statusStaticText">Current Iterations:</div>
+                <div id="currentIterationsDisplay" class="statusBlock"></div>
+            </div>
         </div>
-        <div id="patternList"></div>
-        <div id="alertBox"></div>
-    </div>
+        <div class="secondaryArea">
+            <div class="secondaryAreaTop">
+                <div class="secondaryCanvasArea">
+                    <canvas id="secondaryCanvas" class="secondaryCanvas"></canvas>
+                </div>
+                <div class="savePatternWrap">
+                    <input id="selectedAreaName" class="patternNameInput" type="text">
+                    <button id="saveSelectedAreaButton" class="controlButton">SAVE</button>
+                </div>
+                
+            </div>
+            <div class="secondaryAreaMiddle">
+                <div class="areaTitle">Saved Patterns</div>
+                <div class="categorySelectWrap">
+                    <label for="categories">Choose a category:</label>
+                    <select name="categories" id="categorySelect">
+                        <option value="Basic">Basic</option>
+                        <option value="Custom">Custom</option>
+                      </select>
+                </div>
+                <div class="patternListContainer">
+                    <ul id="patternList">
 
+                    </ul>
+                </div>
+            </div>
+            <div class="secondaryAreaBottom">
+                <div class="areaTitle">Alerts</div>
+                <div id="messageBox" class="messageBox">
+                    <ul id="messageList">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="design.js"></script>
     <script src="index.js"></script>
 </body>
-
 </html>

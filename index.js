@@ -1,10 +1,13 @@
 //TODO
 //!!KÓD takarítás 
 
-// useractionok undo/redo✓
-// kialakítani a mentést és betöltést a local storage-ba✓ 
 // menteni kívánt alakzat nevének validálása
 // üres/random indítás elkülönítése
+// stop/start actionok -> külön függvény
+//a modell indítása inicializálja a felületet,ha még nem történt meg
+//start stopra újra render
+//iteration megjelenítésre/módosításra függvény
+
 
 function $(element) {
     return document.getElementById(element);
@@ -25,7 +28,15 @@ function buildGrid(cols, rows, gameType) {
 }
 
 function showAlert(alertString) {
-    $("alertBox").innerHTML = alertString;
+    let li = document.createElement('li');
+    li.setAttribute("class", "alertMessage");
+    $('messageList').appendChild(li);
+
+    var now = new Date();
+    var time = now.getHours() + ":" + now.getMinutes();
+
+    li.innerHTML = time + ": " + alertString;
+    $("messageBox").scrollTop = $("messageBox").scrollHeight;
 }
 
 //MODELL
@@ -37,6 +48,8 @@ class Modell {
         this.rows = rows;
         this.grid = buildGrid(cols, rows, gameType);
         this.gridLog = [];
+        this.iterationsCounter = 0;
+        this.currentIterationsCounter = 0;
 
         this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
 
@@ -47,14 +60,12 @@ class Modell {
         this.redrawEventTarget = new EventTarget();
 
         //EVENT LISTENERS
-        $('start').addEventListener('click', () => this.start());
-        $('stop').addEventListener('click', () => this.stop());
-        $('speedUp').addEventListener('click', () => this.speedUp());
-        $('slowDown').addEventListener('click', () => this.slowDown());
-        $('-10').addEventListener('click', (e) => this.timeManagment(e));
-        $('-1').addEventListener('click', (e) => this.timeManagment(e));
-        $('+1').addEventListener('click', (e) => this.timeManagment(e));
-        $('+10').addEventListener('click', (e) => this.timeManagment(e));
+        $('startButton').addEventListener('click', () => this.start());
+        $('stopButton').addEventListener('click', () => this.stop());
+        $('speedUpButton').addEventListener('click', () => this.speedUp());
+        $('slowDownButton').addEventListener('click', () => this.slowDown());
+        $('stepBackButton').addEventListener('click', (e) => this.timeManagment(e));
+        $('stepForwardButton').addEventListener('click', (e) => this.timeManagment(e));
     }
 
     nextGen() {
@@ -95,14 +106,26 @@ class Modell {
         this.grid = nextGen;
 
         this.optimalizedGrid = optGrid;
+
+        this.iterationsCounter++;
+        this.currentIterationsCounter++;
+
+        $('totalIterationsDisplay').innerHTML = this.iterationsCounter;
+        $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
     }
 
     start() {//Elindítja a modell működését, abban az esetben, ha álló helyzetben(state=0) van, vagy még nem indult el a működés(state=undefined)
         if (this.state === 0 || this.state === undefined) {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
-            $('start').disabled = true;
-            $('stop').disabled = false;
+            $('startButton').disabled = true;
+            $('stopButton').disabled = false;
+
+            $('startButton').style.display = "none";
+            $('stopButton').style.display = "inline-block";
+            $("statusIcon").src = "runningStatus.png";
+            $('statusDisplay').innerHTML = "RUNNING";
+            this.dispatchReDrawEvent();
         } else {
             showAlert("The simulation must be stopped before you can start it!");
         }
@@ -112,8 +135,16 @@ class Modell {
         if (this.state === 1) {
             clearInterval(this.intervalID);
             this.state = 0;
-            $('start').disabled = false;
-            $('stop').disabled = true;
+            $('startButton').disabled = false;
+            $('stopButton').disabled = true;
+
+            $('startButton').style.display = "inline-block";
+            $('stopButton').style.display = "none";
+            $("statusIcon").src = "stoppedStatus.png";
+            $('statusDisplay').innerHTML = "STOPPED";
+
+            this.currentIterationsCounter = 0;
+            this.dispatchReDrawEvent();
         } else {
             showAlert("The simulation must be running before you can stop it!")
         }
@@ -184,38 +215,24 @@ class Modell {
     }
 
     gridLogGet(parameter) {
-        switch (parameter) {
-            case "-10":
-                if (this.gridLog.length >= 10) {
-                    let res;
-                    for (let i = 0; i < 10; i++) {
-                        res = this.gridLog.pop();
-                    }
-                    return res;
+        if (parameter < 0) {
+            parameter = -parameter;
+            if (this.gridLog.length >= parameter) {
+                let res;
+                for (let i = 0; i < parameter; i++) {
+                    res = this.gridLog.pop();
                 }
-                showAlert("Not enough saved states left...");//HIBA ÜZENET
-                return undefined;
-
-            case "-1":
-                if (this.gridLog.length >= 1) {
-                    let res = this.gridLog.pop();
-
-                    return res;
-                }
-                showAlert("No more saved states left...");
-                return undefined;
-
-            case "+1":
+                this.iterationsCounter -= parameter;
+                return res;
+            }
+            showAlert("Not enough saved states left...");//HIBA ÜZENET
+            return undefined;
+        } else {
+            for (let i = 0; i < parameter; i++) {
                 this.nextGen();
-                this.dispatchReDrawEvent();
-                return false;
-
-            case "+10":
-                for (let i = 0; i < 10; i++) {
-                    this.nextGen();
-                }
-                this.dispatchReDrawEvent();
-                return false;
+            }
+            this.dispatchReDrawEvent();
+            return false;
         }
     }
 
@@ -229,9 +246,13 @@ class Modell {
     }
 
     timeManagment(e) {
-        //console.log(e.target.id);
         if (this.state === 0) {
-            let returnValue = this.gridLogGet(e.target.id);
+            let stepSize = parseInt($("stepValueDisplay").value);
+            if (e.target.id === "stepBackButton") {
+                stepSize = -stepSize;
+            }
+
+            let returnValue = this.gridLogGet(stepSize);
             if (returnValue) {//ha visszatér valamivel akkor állítani kell a gridlogon
                 this.grid = returnValue.map(arr => [...arr]);
                 this.optimalizedGrid = returnValue.map(arr => [...arr]);
@@ -252,7 +273,7 @@ class Modell {
 //VIEW
 class View {
     constructor(canvas, width, height, selectCanvas, gameType) {
-        this.resolutions = [2,4, 8, 20, 40, 100];
+        this.resolutions = [2, 4, 8, 20, 40, 100];
 
         this.canvas = canvas;
         this.modell = new Modell(500, 400, gameType);
@@ -303,23 +324,34 @@ class View {
         this.redoArray = [];
 
         //EVENT LISTENERS
-        $('maincanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
-        $('left').addEventListener('click', (e) => this.moveView(e));
-        $('up').addEventListener('click', (e) => this.moveView(e));
-        $('down').addEventListener('click', (e) => this.moveView(e));
-        $('right').addEventListener('click', (e) => this.moveView(e));
-        document.querySelector('canvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
-        document.querySelector('canvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
-        $('select').addEventListener('click', () => this.switchSelectMode());
+        $('mainCanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
+        $('moveLeftBar').addEventListener('click', (e) => this.moveView(e));
+        $('moveUpBar').addEventListener('click', (e) => this.moveView(e));
+        $('moveDownBar').addEventListener('click', (e) => this.moveView(e));
+        $('moveRightBar').addEventListener('click', (e) => this.moveView(e));
+        $('mainCanvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
+        $('mainCanvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
+        $('selectButton').addEventListener('click', () => this.switchSelectMode());
         $("patternList").addEventListener('click', (e) => this.patternModeOn(e));
         $("stopPattern").addEventListener('click', () => this.patternModeOff());
-        $('start').addEventListener('click', () => this.setReDrawFlag());
-        $('stop').addEventListener('click', () => this.setReDrawFlag());
-        $('undo').addEventListener('click', () => this.undoUserAction());
-        $('redo').addEventListener('click', () => this.redoUserAction());
-        $('saveSelectedArea').addEventListener('click', () => this.saveSelectedArea());
+        $('undoButton').addEventListener('click', () => this.undoUserAction());
+        $('redoButton').addEventListener('click', () => this.redoUserAction());
+        $('saveSelectedAreaButton').addEventListener('click', () => this.saveSelectedArea());
+
+        $("mainCanvas").addEventListener('mousemove', (e) => this.positionDisplay(this.canvas,e));
 
         this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
+    }
+
+    positionDisplay(canvas, e){
+        let currResolution = this.resolutions[this.zoom];
+
+        const rect = canvas.getBoundingClientRect(); 0
+        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
+        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+
+        $('rowDisplay').innerHTML=y;
+        $('columnDisplay').innerHTML=x;
     }
 
     handleZoom(canvas, e) {
@@ -366,6 +398,7 @@ class View {
     }
 
     moveView(e) {
+        debugger;
         this.setReDrawFlag();
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
@@ -373,16 +406,16 @@ class View {
         let zoom = 10 - (2 * this.zoom);
 
         switch (e.target.id) {
-            case "up":
+            case "moveUpBar":
                 startPointY -= zoom;
                 break;
-            case "down":
+            case "moveDownBar":
                 startPointY += zoom;
                 break;
-            case "left":
+            case "moveLeftBar":
                 startPointX -= zoom;
                 break;
-            case "right":
+            case "moveRightBar":
                 startPointX += zoom;
                 break;
         }
@@ -495,9 +528,9 @@ class View {
     }
 
     patternModeOff() {
-        $('start').disabled = false;
+        $('startButton').disabled = false;
         $('stopPattern').disabled = true;
-        $('maincanvas').removeEventListener('mousemove', this.patternHandler);
+        $('mainCanvas').removeEventListener('mousemove', this.patternHandler);
         this.patternData = {
             startPointX: undefined,
             startPointY: undefined,
@@ -509,20 +542,21 @@ class View {
     }
 
     patternModeOn(e) {
+        debugger;
         if (this.modell.state !== 0 || this.selectMode !== 0) {
             showAlert("You must stop the simulation, to put on a pattern.")
             return;//alert hogy állítsa meg a kijelöléshez
         }
-        if (!e.target.classList.contains("patternListItem")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
+        if (!e.target.classList.contains("patternListElement")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
 
-        $('start').disabled = true;
+        $('startButton').disabled = true;
         $('stopPattern').disabled = false;
 
         let pattern = this.Persistence.getPattern(e.target.id.split("-")[1]);
         this.selectctx.clearRect(0, 0, 200, 200);
         this.patternData.patternGrid = pattern;
         this.patternMode = 1;
-        $('maincanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
+        $('mainCanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
     }
 
     patternHandler = (e) => this.movePattern(this.canvas, e);
@@ -548,7 +582,7 @@ class View {
         if (this.selectMode !== 0) {//SELECT MÓD KIVESZ
 
             if (this.selectMode === 2 || this.selectMode === 3) {
-                $('maincanvas').removeEventListener('mousemove', this.selectHandler);
+                $('mainCanvas').removeEventListener('mousemove', this.selectHandler);
 
                 this.selectedArea = {
                     xMin: undefined,
@@ -565,10 +599,10 @@ class View {
 
             this.selectMode = 0;
             this.setReDrawFlag();
-            $('start').disabled = false;
+            $('startButton').disabled = false;
         } else if (this.selectMode === 0) {//SELECT MÓD BERAK
             this.selectMode = 1;
-            $('start').disabled = true;
+            $('startButton').disabled = true;
         }
     }
 
@@ -591,9 +625,9 @@ class View {
 
             this.selectMode = 2;
 
-            $('maincanvas').addEventListener('mousemove', this.selectHandler);
+            $('mainCanvas').addEventListener('mousemove', this.selectHandler);
         } else if (this.selectMode === 2) {
-            $('maincanvas').removeEventListener('mousemove', this.selectHandler);
+            $('mainCanvas').removeEventListener('mousemove', this.selectHandler);
             this.modell.setSelectedArea({ ...this.selectedArea });
 
             this.selectMode = 3;
@@ -753,9 +787,9 @@ class View {
                     this.ctx.rect(col * currResolution, row * currResolution, currResolution, currResolution);
 
                     if (cell === 0) {
-                        this.ctx.fillStyle = "white";
-                    } else if (cell === 1) {
                         this.ctx.fillStyle = "black";
+                    } else if (cell === 1) {
+                        this.ctx.fillStyle = "#07cff6";
                     } else if (cell == 2) {
                         this.ctx.fillStyle = "yellow";
                     } else if (cell == 3) {
@@ -764,7 +798,10 @@ class View {
 
                     this.ctx.fill();
 
-                    if (state !== 1 && this.zoom>0) this.ctx.stroke();
+                    if (state !== 1 && this.zoom > 2 && cell !== 1) {
+                        this.ctx.strokeStyle = 'white';
+                        this.ctx.stroke();
+                    }
                 }
 
             }
@@ -790,9 +827,9 @@ class View {
                 this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
 
                 if (cell === 0) {
-                    this.selectctx.fillStyle = "white";
-                } else {
                     this.selectctx.fillStyle = "black";
+                } else {
+                    this.selectctx.fillStyle = "#07cff6";
                 }
 
                 this.selectctx.fill();
@@ -828,9 +865,9 @@ class View {
                     this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
 
                     if (cell === 0) {
-                        this.selectctx.fillStyle = "white";
-                    } else {
                         this.selectctx.fillStyle = "black";
+                    } else {
+                        this.selectctx.fillStyle = "#07cff6";
                     }
 
                     this.selectctx.fill();
@@ -896,12 +933,22 @@ class Persistence {
     addListElement(element) {
         this.patternList.push(element);
 
-        let iDiv = document.createElement('div');
-        iDiv.id = "listElement-" + element.name;
-        iDiv.innerHTML = element.name;
-        iDiv.className = "patternListItem";
+        let iLi = document.createElement('li');
+        iLi.id = "listElement-" + element.name;
+        iLi.innerHTML = element.name;
+        iLi.className = "patternListElement";
 
-        $("patternList").appendChild(iDiv);
+        let selectButton=document.createElement("button");
+        selectButton.innerHTML="Select";
+
+        let deleteButton=document.createElement("button");
+        deleteButton.innerHTML="Delete";
+
+        iLi.appendChild(selectButton);
+        iLi.appendChild(deleteButton);
+
+
+        $("patternList").appendChild(iLi);
     }
 
     getPattern(patternName) {
@@ -924,20 +971,18 @@ class Persistence {
     }
 }
 
-$("GameOfLife").hidden = true;
 
-$("randomGame").addEventListener('click', () => startGame("random"));
-$("blankGame").addEventListener('click', () => startGame("blank"));
+$("newGameButton").addEventListener('click', () => startGame("blank"));
 
 
 
 function startGame(gameType) {
-    const canvas = $('maincanvas');
-    const selectCanvas = $('selectCanvas');
+    const canvas = $('mainCanvas');
+    const selectCanvas = $('secondaryCanvas');
 
     let V = new View(canvas, 1000, 800, selectCanvas, gameType);
     V.start();
-    $("randomGame").hidden = true;
-    $("blankGame").hidden = true;
-    $("GameOfLife").hidden = false;
+    //$("randomGame").hidden = true;
+    //$("blankGame").hidden = true;
+    // $("GameOfLife").hidden = false;
 }

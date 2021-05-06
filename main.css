@@ -32,6 +32,10 @@ footer, header, hgroup, menu, nav, section {
 }
 body {
     line-height: 1;
+    min-width:1440px;
+    min-height:890px;
+    width:1440px;
+    height:890px;
 }
 ol, ul {
 	list-style: none;
@@ -48,13 +52,13 @@ table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
-
+/*MAIN LAYOUT*/
 .mainGrid {
     display: grid;
     width: 1440px;
-    height: 900px;
+    height: 920px;
     grid-template-columns: 1040px 400px;
-    grid-template-rows: 30px 870px;
+    grid-template-rows: 20px 900px;
     grid-template-areas: "header header" "mainColumn secondaryColumn";
     border:3px solid #020204;
 }
@@ -62,30 +66,51 @@ table {
 .header {
     grid-area: header;
     background-color: #04131e;
-    border-bottom:1px solid #020204;
+    border-bottom:2px solid #020204;
 }
 .footer {
     grid-area: footer;
     background-color:#04131e;
     border-top:1px solid #020204;
 }
+/*MENUBAR*/
+#menuBar li{
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 2px 16px;
+    text-decoration: none;
+}
+#menuBar li:hover{
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 2px 16px;
+    text-decoration: none;
+    background-color: #5a98ba;
+}
 
+/*MAIN AREA*/
 .mainArea {
     grid-area: mainColumn;
     background-color: #194162;
     display: grid;
     grid-template-columns: 20px 1000px 20px;
-    grid-template-rows: 20px 800px 20px 30px;
-    grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar ." "mainAreaBottom mainAreaBottom mainAreaBottom";
+    grid-template-rows: 20px 800px 20px 30px 30px;
+    grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar ." "controlArea controlArea controlArea" "mainAreaBottom mainAreaBottom mainAreaBottom";
 }
-
+    /*MOVE BARS*/
 .moveBar{
     background-color: #194162;
     overflow:hidden;
+    display:flex;
+    justify-content: center;
 }
 
 .moveBar:hover{
-    background-color:#8cc6e5;
+    background-color:#5a98ba;
     transition: background-color 0.5s;
 }
 
@@ -137,21 +162,96 @@ table {
     border-right:1px solid black;
 }
 
+.moveButtonImage{
+    display: block;
+    margin:auto;
+}
+
+    /*MAIN CANVAS*/
 .mainDisplay{
     grid-area: mainDisplay;
     background-color:#020204;
 }
 
+.mainCanvas{
+    width:1000px;
+    height:800px;
+}
+    /*CONTROL BAR*/
+.controlArea{
+    grid-area:controlArea;
+    border-top:1px solid #020204;
+    display:grid;
+    grid-template-columns: 150px 740px 150px;
+    grid-template-areas: "stateDisplay controlBar positionDisplay";
+}
+
+.controlBar{
+    grid-area:controlBar;
+    background-color:#04131e;
+}
+
+.controlBlock{
+    display:inline-block;
+    width:243px;
+    font-size:16px;
+    color:#81bbda;
+    text-align:center;
+}
+
+.controlButton{
+    height:28px;
+    background-color:#81bbda;
+}
+
+.controlIcon{
+    width:10px;
+    height:10px;
+}
+
+.numberInput{
+    width:20px;
+    background-color:#81bbda;
+}
+
+.mousePositionArea{
+    grid-area:positionDisplay;
+}
+
+    /*STATUS BAR*/
 .mainAreaBottom{
     grid-area: mainAreaBottom;
     background-color:#04131e;
     border-top:1px solid #020204;
 }
+
+.statusBlock{
+    margin-left:5px;
+    display:inline-block;
+    color: white;
+    font-size: 12px;
+    vertical-align: middle;
+    padding-top:7px;
+    padding-bottom:7px;
+}
+
+.statusIcon{
+  vertical-align: middle;
+  width:12px;
+  height:12px;
+}
+
+.statusStaticText{
+    font-size:14px;
+    color:#81bbda;
+}
+
+/*SECONDARY DISPLAY*/
 .secondaryArea {
     grid-area: secondaryColumn;
     background-color:#0d2534;
     display:grid;
-    grid-template-rows:365px 400px 105px;
+    grid-template-rows:365px 415px 120px;
     grid-template-areas: "secondaryAreaTop" "secondaryAreaMiddle" "secondaryAreaBottom";
     border-left:1px solid #020204;
 }
@@ -159,13 +259,98 @@ table {
     grid-area:secondaryAreaTop;
     border-bottom:1px solid black;
 }
+.secondaryCanvasArea{
+    width:300px;
+    height:300px;
+    background-color:black;
+    margin-left:auto;
+    margin-right:auto;
+    margin-top:20px;
+}
 
+.secondaryCanvas {
+    width:300px;
+    height:300px;
+}
+.savePatternWrap{
+    margin-left:auto;
+    margin-right:auto;
+    margin-top:10px;
+    margin-bottom:10px;
+    width:300px;
+}
+
+.savePatternWrap button{
+    float:right;
+}
+.patternNameInput{
+    background-color:#81bbda;
+    height:20px;
+    width:220px;
+}
 .secondaryAreaMiddle{
     grid-area: secondaryAreaMiddle;
+}
+
+.categorySelectWrap{
+    padding:5px;
+    color:#81bbda;
+}
+.patternListContainer{
+    overflow-y:scroll;
+    height:343px;
+    width:100%;
+}
+.patternListElement{
+    border:1px solid black;
+    margin-left:5px;
+    margin-right:5px;
+    background-color:#81bbda;
+    padding:5px;
+    font-size:1.1em;
+}
+
+.patternListElement button{
+    float:right;
+    background-color: #81bbda;
+}
+
+.areaTitle{
+    text-align: center;
+    color:#81bbda;
+    font-size: 1.1em;
+    padding:4px;
+    background-color:#04131e;
+    border-top:1px solid black;
+    border-bottom:1px solid black;
 }
 
 .secondaryAreaBottom{
     grid-area: secondaryAreaBottom;
     background-color:#04131e;
     border-top:1px solid #020204;
+}
+
+.messageBox{
+    height:93px;
+    width:390px;
+    background-color:black;
+    margin-left:auto;
+    margin-right:auto;
+    overflow-y:scroll;
+    overflow-x:hidden;
+    word-wrap: break-word;
+}
+
+.alertMessage{
+    color:red;
+    margin-left:5px;
+    margin-right:5px;
+    padding:5px;
+    padding-left:50px;
+    text-indent:-45px;
+}
+
+.floatLeft{
+    float:left;
 }
