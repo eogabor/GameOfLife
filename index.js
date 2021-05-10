@@ -2,11 +2,9 @@
 //!!KÓD takarítás 
 
 // menteni kívánt alakzat nevének validálása
-// üres/random indítás elkülönítése
 // stop/start actionok -> külön függvény
-//a modell indítása inicializálja a felületet,ha még nem történt meg
-//start stopra újra render
 //iteration megjelenítésre/módosításra függvény
+//gyorsításnál curr iteration megmaradásra valami szebbet kitalálni
 
 
 function $(element) {
@@ -27,13 +25,25 @@ function buildGrid(cols, rows, gameType) {
     }
 }
 
-function showAlert(alertString) {
+function showAlert(alertString, type) {
     let li = document.createElement('li');
     li.setAttribute("class", "alertMessage");
     $('messageList').appendChild(li);
 
+    if (type == "alert") {
+        li.style.color = "red";
+    }
+
+    if (type == "warning") {
+        li.style.color = "yellow";
+    }
+
+    if (type == "tip") {
+        li.style.color = "blue";
+    }
+
     var now = new Date();
-    var time = now.getHours() + ":" + now.getMinutes();
+    var time = ('0' + now.getHours().toString()).slice(-2) + ":" + ('0' + now.getMinutes().toString()).slice(-2);
 
     li.innerHTML = time + ": " + alertString;
     $("messageBox").scrollTop = $("messageBox").scrollHeight;
@@ -59,6 +69,8 @@ class Modell {
 
         this.redrawEventTarget = new EventTarget();
 
+        $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
+
         //EVENT LISTENERS
         $('startButton').addEventListener('click', () => this.start());
         $('stopButton').addEventListener('click', () => this.stop());
@@ -66,6 +78,21 @@ class Modell {
         $('slowDownButton').addEventListener('click', () => this.slowDown());
         $('stepBackButton').addEventListener('click', (e) => this.timeManagment(e));
         $('stepForwardButton').addEventListener('click', (e) => this.timeManagment(e));
+    }
+
+    reset(gameType) {
+        clearInterval(this.intervalID);
+        this.grid = buildGrid(this.cols, this.rows, gameType);
+
+        this.gridLog = [];
+        this.iterationsCounter = 0;
+        this.currentIterationsCounter = 0;
+
+        this.optimalizedGrid = this.grid.map(arr => [...arr]);
+        this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
+        this.speed = 4;
+        this.intervalID = undefined;
+        $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
     }
 
     nextGen() {
@@ -125,9 +152,10 @@ class Modell {
             $('stopButton').style.display = "inline-block";
             $("statusIcon").src = "runningStatus.png";
             $('statusDisplay').innerHTML = "RUNNING";
+            $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
             this.dispatchReDrawEvent();
         } else {
-            showAlert("The simulation must be stopped before you can start it!");
+            showAlert("The simulation must be stopped before you can start it!", "warning");
         }
     }
 
@@ -146,7 +174,7 @@ class Modell {
             this.currentIterationsCounter = 0;
             this.dispatchReDrawEvent();
         } else {
-            showAlert("The simulation must be running before you can stop it!")
+            showAlert("The simulation must be running before you can stop it!", "warning");
         }
     }
 
@@ -160,22 +188,28 @@ class Modell {
 
     speedUp() {
         if (this.state === 1 && this.speed > 0) {
+            let temp = this.currentIterationsCounter;
             this.speed -= 1;
+            $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
             this.stop();
+            this.currentIterationsCounter = temp;
             this.start();
         } else {
-            showAlert("You have reached maximum iteration speed!");
+            showAlert("You have reached maximum iteration speed!", "warning");
         }
 
     }
 
     slowDown() {
         if (this.state === 1 && this.speed < 8) {
+            let temp = this.currentIterationsCounter;
             this.speed += 1;
+            $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
             this.stop();
+            this.currentIterationsCounter = temp;
             this.start();
         } else {
-            showAlert("You have reached minimal iteration speed!");
+            showAlert("You have reached minimal iteration speed!", "warning ");
         }
 
     }
@@ -225,7 +259,7 @@ class Modell {
                 this.iterationsCounter -= parameter;
                 return res;
             }
-            showAlert("Not enough saved states left...");//HIBA ÜZENET
+            showAlert("Not enough saved states left...", "warning");//HIBA ÜZENET
             return undefined;
         } else {
             for (let i = 0; i < parameter; i++) {
@@ -259,7 +293,7 @@ class Modell {
                 this.dispatchReDrawEvent();
             }
         } else {
-            showAlert("You must stop the simulation, to manage time!")
+            showAlert("You must stop the simulation, to manage time!", "alert")
         }
 
     }
@@ -283,8 +317,8 @@ class View {
 
         this.selectCanvas = selectCanvas;
         this.selectctx = this.selectCanvas.getContext('2d');
-        this.selectCanvas.width = 200;
-        this.selectCanvas.height = 200;
+        this.selectCanvas.width = 300;
+        this.selectCanvas.height = 300;
 
         this.height = height;
         this.width = width;
@@ -323,6 +357,9 @@ class View {
         this.userActions = [];
         this.redoArray = [];
 
+        $('patternModeDisplay').style.display = "none";
+        $("zoomLevelDisplay").innerHTML = 1 + this.zoom + "/6";
+
         //EVENT LISTENERS
         $('mainCanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
         $('moveLeftBar').addEventListener('click', (e) => this.moveView(e));
@@ -338,20 +375,57 @@ class View {
         $('redoButton').addEventListener('click', () => this.redoUserAction());
         $('saveSelectedAreaButton').addEventListener('click', () => this.saveSelectedArea());
 
-        $("mainCanvas").addEventListener('mousemove', (e) => this.positionDisplay(this.canvas,e));
+        $("mainCanvas").addEventListener('mousemove', (e) => this.positionDisplay(this.canvas, e));
 
         this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
     }
 
-    positionDisplay(canvas, e){
+    reset(gameType) {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
+        this.modell.reset(gameType);
+
+        //reseting view attributes
+        this.zoom = 1;
+        this.renderStartX = 0;
+        this.renderStartY = 0;
+
+        this.selectMode = 0; //0=>nem selectMód, 1=>SelectMód első klikk előtt, 2=>SelectMód második klikk előtt
+        this.selectedArea = { //A kijelölt terület határait határozza meg, nincs kijelölés =>minden undefined
+            xMin: undefined,
+            xMax: undefined,
+            yMin: undefined,
+            yMax: undefined,
+            startX: undefined,
+            startY: undefined,
+        };
+
+        this.patternData = {
+            startPointX: undefined,
+            startPointY: undefined,
+            patternGrid: undefined,
+        }
+
+        this.redrawFlag = 1; //Ha a flag értéke 1 akkor az egész gridet rajzoljuk ki, ha 0 akkor csak a módosult cellákat
+
+        this.renderBin = [];
+
+        this.userActions = [];
+        this.redoArray = [];
+
+        $('patternModeDisplay').style.display = "none";
+
+    }
+
+    positionDisplay(canvas, e) {
         let currResolution = this.resolutions[this.zoom];
 
         const rect = canvas.getBoundingClientRect(); 0
         const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
         const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
 
-        $('rowDisplay').innerHTML=y;
-        $('columnDisplay').innerHTML=x;
+        $('rowDisplay').innerHTML = y;
+        $('columnDisplay').innerHTML = x;
     }
 
     handleZoom(canvas, e) {
@@ -378,6 +452,7 @@ class View {
             } else {
                 this.zoom += 1;
             }
+            $("zoomLevelDisplay").innerHTML = 1 + this.zoom + "/6";
 
             let newResolution = this.resolutions[this.zoom];
             let newCols = this.width / newResolution;
@@ -438,7 +513,9 @@ class View {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode !== 0) {
             //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
-            showAlert("You must stop the simulation, to manipulate cells.");
+            if (this.selectMode === 0) {
+                showAlert("You must stop the simulation, to manipulate cells.", "warning");
+            }
             return;
         }
 
@@ -488,7 +565,7 @@ class View {
 
     undoUserAction() {
         if (this.modell.state !== 0) {
-            showAlert("You must stop the simulation, to undo/redo actions.");
+            showAlert("You must stop the simulation, to undo/redo actions.", "warning");
         }
 
         if (this.userActions.length === 0) {
@@ -508,11 +585,11 @@ class View {
 
     redoUserAction() {
         if (this.modell.state !== 0) {
-            showAlert("You must stop the simulation, to undo/redo actions.");
+            showAlert("You must stop the simulation, to undo/redo actions.", "warning");
         }
 
         if (this.redoArray.length === 0) {
-            showAlert("No more redoable actions left.");
+            showAlert("No more redoable actions left.", "warning");
             return;
         }
 
@@ -530,6 +607,7 @@ class View {
     patternModeOff() {
         $('startButton').disabled = false;
         $('stopPattern').disabled = true;
+        $('patternModeDisplay').style.display = "none";
         $('mainCanvas').removeEventListener('mousemove', this.patternHandler);
         this.patternData = {
             startPointX: undefined,
@@ -538,13 +616,13 @@ class View {
         }
         this.patternMode = 0;
 
-        this.selectctx.clearRect(0, 0, 200, 200);
+        this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
     }
 
     patternModeOn(e) {
         debugger;
         if (this.modell.state !== 0 || this.selectMode !== 0) {
-            showAlert("You must stop the simulation, to put on a pattern.")
+            showAlert("You must stop the simulation, to put on a pattern.", "warning")
             return;//alert hogy állítsa meg a kijelöléshez
         }
         if (!e.target.classList.contains("patternListElement")) return; // ha nem egy elemre kattint a diven belül ne történjen semmi
@@ -553,10 +631,11 @@ class View {
         $('stopPattern').disabled = false;
 
         let pattern = this.Persistence.getPattern(e.target.id.split("-")[1]);
-        this.selectctx.clearRect(0, 0, 200, 200);
+        this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
         this.patternData.patternGrid = pattern;
         this.patternMode = 1;
         $('mainCanvas').addEventListener('mousemove', (e) => this.patternHandler(e));
+        $('patternModeDisplay').style.display = "block";
     }
 
     patternHandler = (e) => this.movePattern(this.canvas, e);
@@ -574,7 +653,7 @@ class View {
 
     switchSelectMode() {
         if (this.modell.state !== 0 || this.patternMode !== 0) {
-            showAlert("You must stop the simulation, before entering select mode.")
+            showAlert("You must stop the simulation, before entering select mode.", "warning")
             return;//alert hogy állítsa meg a kijelöléshez
         }
 
@@ -594,15 +673,17 @@ class View {
                 }
 
                 this.modell.delSelectedArea();
-                this.selectctx.clearRect(0, 0, 200, 200);
+                this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
             }
 
             this.selectMode = 0;
             this.setReDrawFlag();
             $('startButton').disabled = false;
+            $('selectButton').style.backgroundColor = '#81bbda';
         } else if (this.selectMode === 0) {//SELECT MÓD BERAK
             this.selectMode = 1;
             $('startButton').disabled = true;
+            $('selectButton').style.backgroundColor = '#07cff6';
         }
     }
 
@@ -638,7 +719,7 @@ class View {
 
     saveSelectedArea() {
         if (this.selectMode !== 3) {
-            showAlert("You have to select an area, before saving it!");
+            showAlert("You have to select an area, before saving it!", "alert");
             return;
         }
 
@@ -684,7 +765,7 @@ class View {
                 this.selectedArea.xMin = x;
                 this.selectedArea.xMax = startX;
             } else {
-                showAlert("The selected area can be maximum 50 cells wide.")
+                showAlert("The selected area can be maximum 50 cells wide.", "warning")
                 //HIBA ÜZENET : NEM LEHET 100nál szélesebbet kijelölni
             }
         }
@@ -693,7 +774,7 @@ class View {
                 this.selectedArea.xMax = x;
                 this.selectedArea.xMin = startX;
             } else {
-                showAlert("The selected area can be maximum 50 cells high.")
+                showAlert("The selected area can be maximum 50 cells high.", "warning")
             }
         }
         if (y < yMin) {
@@ -799,7 +880,7 @@ class View {
                     this.ctx.fill();
 
                     if (state !== 1 && this.zoom > 2 && cell !== 1) {
-                        this.ctx.strokeStyle = 'white';
+                        this.ctx.strokeStyle = '#5a98ba';
                         this.ctx.stroke();
                     }
                 }
@@ -811,30 +892,36 @@ class View {
     renderSelect() { // selected area renderelése, amennyiben létezik
 
         if (!this.modell.getSelectedArea()) return;
+        debugger;
 
         let grid = this.modell.getSelectedArea();
         let sizeX = grid.length;
         let sizeY = grid[0].length;
 
         let maxSize = sizeX > sizeY ? sizeX : sizeY;
-        let resoulution = Math.floor(200 / maxSize);
+        let resolution = Math.floor(300 / maxSize);
+        let offSetX = Math.floor((300-resolution*sizeX)/2);
+        let offSetY = Math.floor((300-resolution*sizeY)/2);
 
         for (let col = 0; col < sizeX; col++) {
             for (let row = 0; row < sizeY; row++) {
                 const cell = grid[col][row];
 
                 this.selectctx.beginPath();
-                this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
+                this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
 
                 if (cell === 0) {
                     this.selectctx.fillStyle = "black";
+                    if(resolution>=12){
+                        this.selectctx.strokeStyle = '#5a98ba';
+                    }
                 } else {
                     this.selectctx.fillStyle = "#07cff6";
+                    this.selectctx.strokeStyle = 'black';
                 }
 
                 this.selectctx.fill();
                 this.selectctx.stroke();
-
             }
         }
     }
@@ -847,36 +934,42 @@ class View {
         let sizeY = grid[0].length + 2;
 
         let maxSize = sizeX > sizeY ? sizeX : sizeY;
-        let resoulution = Math.floor(200 / maxSize);
+        let resolution = Math.floor(300 / maxSize);
+        let offSetX = Math.floor((300-resolution*sizeX)/2);
+        let offSetY = Math.floor((300-resolution*sizeY)/2);
 
         for (let col = 0; col < sizeX; col++) {
             for (let row = 0; row < sizeY; row++) {
                 if (col === 0 || col === sizeX - 1 || row === 0 || row === sizeY - 1) {
                     this.selectctx.beginPath();
-                    this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
-                    this.selectctx.fillStyle = "white";
+                    this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
+                    this.selectctx.fillStyle = "black";
+                    if(resolution>=12){
+                        this.selectctx.strokeStyle = '#5a98ba';
+                    }
                     this.selectctx.fill();
                     this.selectctx.stroke();
-
                 } else {
                     const cell = grid[col - 1][row - 1];
 
                     this.selectctx.beginPath();
-                    this.selectctx.rect(col * resoulution, row * resoulution, resoulution, resoulution);
+                    this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
 
                     if (cell === 0) {
                         this.selectctx.fillStyle = "black";
+                        if(resolution>=12){
+                            this.selectctx.strokeStyle = '#5a98ba';
+                        }
                     } else {
                         this.selectctx.fillStyle = "#07cff6";
+                        this.selectctx.strokeStyle = 'black';
                     }
 
                     this.selectctx.fill();
                     this.selectctx.stroke();
                 }
-
             }
         }
-
     }
 
     setReDrawFlag() {
@@ -938,11 +1031,11 @@ class Persistence {
         iLi.innerHTML = element.name;
         iLi.className = "patternListElement";
 
-        let selectButton=document.createElement("button");
-        selectButton.innerHTML="Select";
+        let selectButton = document.createElement("button");
+        selectButton.innerHTML = "Select";
 
-        let deleteButton=document.createElement("button");
-        deleteButton.innerHTML="Delete";
+        let deleteButton = document.createElement("button");
+        deleteButton.innerHTML = "Delete";
 
         iLi.appendChild(selectButton);
         iLi.appendChild(deleteButton);
@@ -953,7 +1046,7 @@ class Persistence {
 
     getPattern(patternName) {
         if (this.dataLoaded < 2) {
-            showAlert("this pattern haven't loaded yet.")
+            showAlert("This pattern hasn't loaded yet.", "warning")
             return;
         }
 
@@ -971,18 +1064,65 @@ class Persistence {
     }
 }
 
+class MainController {
+    constructor() {
+        //data
+        this.View = undefined;
+        this.state = 0;//0->No running game,1->running game present
+        this.mainCanvas = $('mainCanvas');
+        this.secondaryCanvas = $('secondaryCanvas');
 
-$("newGameButton").addEventListener('click', () => startGame("blank"));
+        //Empty display string
+        $("statusDisplay").innerHTML = "";
+        $("totalIterationsDisplay").innerHTML = "";
+        $("currentIterationsDisplay").innerHTML = "";
+        $('statusIcon').src = "";
+        $("rowDisplay").innerHTML = "";
+        $("columnDisplay").innerHTML = "";
+
+        //disable buttons
+        var buttons = document.querySelectorAll(".controlButton");
+        for (let i = 0; i < buttons.length; i++) {
+            buttons[i].disabled = true;
+        }
+
+        //disable input controls
+        $('stepValueInput').disabled = true;
+        $('categorySelect').disabled = true;
+        $('selectedAreaName').disabled = true;
+
+        //eventListeners
+        $("newEmptyGameButton").addEventListener('click', () => this.startGame("blank"));
+        $("newRandomGameButton").addEventListener('click', () => this.startGame("random"));
+
+        //hideitems
+        $('patternModeDisplay').style.display = "none";
 
 
+        showAlert("Welcome! To start a new game, chose New->Empty / New->Random, or import a previously exported gamestate!", "tip");
+    }
 
-function startGame(gameType) {
-    const canvas = $('mainCanvas');
-    const selectCanvas = $('secondaryCanvas');
-
-    let V = new View(canvas, 1000, 800, selectCanvas, gameType);
-    V.start();
-    //$("randomGame").hidden = true;
-    //$("blankGame").hidden = true;
-    // $("GameOfLife").hidden = false;
+    startGame(gameType) {
+        debugger;
+        if (this.state === 0) {
+            this.View = new View(this.mainCanvas, 1000, 800, this.secondaryCanvas, gameType);
+            //enable controls
+            var buttons = document.querySelectorAll(".controlButton");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = false;
+            }
+            $('stepValueInput').disabled = false;
+            $('categorySelect').disabled = false;
+            $('selectedAreaName').disabled = false;
+            //start
+            this.View.start();
+            this.state = 1;
+        } else {
+            this.View.reset(gameType);
+            this.View.modell.start();
+        }
+        showAlert("New " + gameType + " game started!", "tip");
+    }
 }
+
+let mainController = new MainController();

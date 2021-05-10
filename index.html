@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
@@ -7,27 +8,44 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
 </head>
+
 <body>
     <div class="mainGrid">
         <div class="header">
             <div id="menuBar">
                 <ul>
-                    <li id="newGameButton">New</li>
+                    <li id="newGameButton" class="dropDown">
+                        <div>
+                            <span>New</span>
+                            <ul class="dropDownContent">
+                                <li id="newEmptyGameButton">Empty</li>
+                                <li id="newRandomGameButton">Random</li>
+                            </ul>
+                        </div>
+                    </li>
                     <li>Export</li>
                     <li>Import</li>
                 </ul>
             </div>
         </div>
         <div class="mainArea">
-            <div id="moveUpBar" class="moveBar moveUpBar"><img id="moveUpIcon" class="moveButtonImage" src="moveUpArrow.png"></div>
-            <div id="moveLeftBar" class="moveBar moveLeftBar"><img id="moveLeftIcon" class="moveButtonImage" src="moveLeftArrow.png"></div>
+            <div id="moveUpBar" class="moveBar moveUpBar"><img id="moveUpIcon" class="moveButtonImage"
+                    src="moveUpArrow.png"></div>
+            <div id="moveLeftBar" class="moveBar moveLeftBar"><img id="moveLeftIcon" class="moveButtonImage"
+                    src="moveLeftArrow.png"></div>
             <div class="mainDisplay">
                 <canvas id="mainCanvas" class="mainCanvas"></canvas>
             </div>
-            <div id="moveRightBar" class="moveBar moveRightBar"><img id="moveRightIcon" class="moveButtonImage" src="moveRightArrow.png"></div>
-            <div id="moveDownBar" class="moveBar moveDownBar"><img id="moveDownIcon" class="moveButtonImage" src="moveDownArrow.png"></div>
+            <div id="moveRightBar" class="moveBar moveRightBar"><img id="moveRightIcon" class="moveButtonImage"
+                    src="moveRightArrow.png"></div>
+            <div id="moveDownBar" class="moveBar moveDownBar"><img id="moveDownIcon" class="moveButtonImage"
+                    src="moveDownArrow.png"></div>
             <div class="controlArea">
                 <div id="stateDisplay"></div>
+                <div id="patternModeDisplay" class="patternStateDisplayArea">
+                    <div class="statusBlock statusStaticText blackText">Exit pattern mode:</div>
+                    <button id="stopPattern" class="controlButton floatRight">X</button>
+                </div>
                 <div id="controlBar" class="controlBar">
                     <div class="controlBlock">
                         <button id="stepBackButton" class="controlButton">-</button>
@@ -36,34 +54,42 @@
                         <input type="text" class="numberInput" id="stepValueDisplay">
                     </div>
                     <div class="controlBlock">
-                        <button id="slowDownButton" class="controlButton"><img class="controlIcon" src="slowDownIcon.png"></button>
+                        <button id="slowDownButton" class="controlButton"><img class="controlIcon"
+                                src="slowDownIcon.png"></button>
                         <button id="startButton" class="controlButton">START</button>
                         <button id="stopButton" class="controlButton" style="display: none;">STOP</button>
-                        <button id="speedUpButton" class="controlButton"><img class="controlIcon" src="speedUpIcon.png"></button>
-                        
+                        <button id="speedUpButton" class="controlButton"><img class="controlIcon"
+                                src="speedUpIcon.png"></button>
+
                     </div>
                     <div class="controlBlock">
-                        <button id="undoButton" class="controlButton floatLeft"><img class="controlIcon" src="undoIcon.png"></button>
-                        <button id="redoButton" class="controlButton floatLeft"><img class="controlIcon" src="redoIcon.png" alt=""></button>
+                        <button id="undoButton" class="controlButton floatLeft"><img class="controlIcon"
+                                src="undoIcon.png"></button>
+                        <button id="redoButton" class="controlButton floatLeft"><img class="controlIcon"
+                                src="redoIcon.png" alt=""></button>
                         <button id="selectButton" class="controlButton floatRight">SELECT</button>
-                        <button id="stopPattern" class="controlButton floatRight">X</button>
                     </div>
                 </div>
-                <div id="mousePositionArea">
+                <div id="mousePositionArea" class="mousePositionArea">
                     <div class="statusBlock statusStaticText">Row:</div>
-                    <div id="rowDisplay" class="statusBlock">25</div>
+                    <div id="rowDisplay" class="statusBlock"></div>
                     <div class="statusBlock statusStaticText">Column:</div>
-                    <div id="columnDisplay" class="statusBlock">25</div>
+                    <div id="columnDisplay" class="statusBlock"></div>
                 </div>
             </div>
             <div class="mainAreaBottom">
                 <div class="statusBlock statusStaticText">Game Status:</div>
-                <div id="statusDisplay" class="statusBlock">STOPPED</div>
-                <div class="statusBlock"><img id="statusIcon" class="statusIcon" src="stoppedStatus.png"></div>
-                <div class="statusBlock statusStaticText">Total Iterations:</div>
-                <div id="totalIterationsDisplay" class="statusBlock"></div>
-                <div class="statusBlock statusStaticText">Current Iterations:</div>
-                <div id="currentIterationsDisplay" class="statusBlock"></div>
+                <div id="statusDisplay" class="statusBlock"></div>
+                <div class="statusBlock"><img id="statusIcon" class="statusIcon"></div>
+
+                <div id="zoomLevelDisplay" class="statusBlock statusDataDisplay floatRight"></div>
+                <div class="statusBlock statusStaticText floatRight">Zoom level:</div>
+                <div id="iterationSpeedDisplay" class="statusBlock statusDataDisplay floatRight"></div>
+                <div class="statusBlock statusStaticText floatRight">Iteration speed:</div>
+                <div id="currentIterationsDisplay" class="statusBlock statusDataDisplay floatRight"></div>
+                <div class="statusBlock statusStaticText floatRight">Current Iterations:</div>
+                <div id="totalIterationsDisplay" class="statusBlock statusDataDisplay floatRight"></div>
+                <div class="statusBlock statusStaticText floatRight">Total Iterations:</div>
             </div>
         </div>
         <div class="secondaryArea">
@@ -75,7 +101,7 @@
                     <input id="selectedAreaName" class="patternNameInput" type="text">
                     <button id="saveSelectedAreaButton" class="controlButton">SAVE</button>
                 </div>
-                
+
             </div>
             <div class="secondaryAreaMiddle">
                 <div class="areaTitle">Saved Patterns</div>
@@ -84,7 +110,7 @@
                     <select name="categories" id="categorySelect">
                         <option value="Basic">Basic</option>
                         <option value="Custom">Custom</option>
-                      </select>
+                    </select>
                 </div>
                 <div class="patternListContainer">
                     <ul id="patternList">
@@ -104,4 +130,5 @@
     <script src="design.js"></script>
     <script src="index.js"></script>
 </body>
+
 </html>
