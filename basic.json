@@ -1,6 +1,7 @@
 [
     {
         "name": "Block",
+        "categoryName":"Basic",
         "pattern": [
             [1,1],
             [1,1]
@@ -8,6 +9,7 @@
     },
     {
         "name":"Tub",
+        "categoryName":"Basic",
         "pattern":[
             [0,1,0],
             [1,0,1],
@@ -16,6 +18,7 @@
     },
     {
         "name":"Duck",
+        "categoryName":"Basic",
         "pattern" : [
             [0,1,1,0,0,0],
             [1,0,1,1,1,0],
@@ -26,6 +29,7 @@
     },
     {
         "name":"Bloom",
+        "categoryName":"Basic",
         "pattern":[
             [1,1,1,1,1],
             [1,1,1,1,1],

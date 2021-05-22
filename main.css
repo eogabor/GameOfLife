@@ -5,54 +5,49 @@ CSS RESET
    License: none (public domain)
 */
 
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video {
-	margin: 0;
-	padding: 0;
-	border: 0;
-	font-size: 100%;
-	font: inherit;
-	vertical-align: baseline;
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
 }
+
 /* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure, 
-footer, header, hgroup, menu, nav, section {
-	display: block;
+
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+    display: block;
 }
+
 body {
     line-height: 1;
-    min-width:1440px;
-    min-height:890px;
-    width:1440px;
-    height:890px;
+    min-width: 1440px;
+    min-height: 890px;
+    width: 1440px;
+    height: 890px;
 }
+
 ol, ul {
-	list-style: none;
+    list-style: none;
 }
+
 blockquote, q {
-	quotes: none;
+    quotes: none;
 }
-blockquote:before, blockquote:after,
-q:before, q:after {
-	content: '';
-	content: none;
+
+blockquote:before, blockquote:after, q:before, q:after {
+    content: '';
+    content: none;
 }
+
 table {
-	border-collapse: collapse;
-	border-spacing: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
 }
+
 /*MAIN LAYOUT*/
+
 .mainGrid {
     display: grid;
     width: 1440px;
@@ -60,21 +55,24 @@ table {
     grid-template-columns: 1040px 400px;
     grid-template-rows: 20px 900px;
     grid-template-areas: "header header" "mainColumn secondaryColumn";
-    border:3px solid #020204;
+    border: 3px solid #020204;
 }
 
 .header {
     grid-area: header;
     background-color: #04131e;
-    border-bottom:2px solid #020204;
+    border-bottom: 2px solid #020204;
 }
+
 .footer {
     grid-area: footer;
-    background-color:#04131e;
-    border-top:1px solid #020204;
+    background-color: #04131e;
+    border-top: 1px solid #020204;
 }
+
 /*MENUBAR*/
-#menuBar li{
+
+#menuBar li {
     float: left;
     display: block;
     color: white;
@@ -82,7 +80,8 @@ table {
     padding: 2px 16px;
     text-decoration: none;
 }
-#menuBar li:hover{
+
+#menuBar li:hover {
     float: left;
     display: block;
     color: white;
@@ -95,23 +94,24 @@ table {
 .dropDown {
     position: relative;
     display: inline-block;
-  }
-  
-  .dropDownContent {
+}
+
+.dropDownContent {
     display: none;
     position: absolute;
     background-color: #04131e;
     min-width: 60px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     padding: 12px 16px;
     z-index: 1;
-  }
-  
-  .dropDown:hover .dropDownContent {
+}
+
+.dropDown:hover .dropDownContent {
     display: block;
-  }
+}
 
 /*MAIN AREA*/
+
 .mainArea {
     grid-area: mainColumn;
     background-color: #194162;
@@ -120,277 +120,388 @@ table {
     grid-template-rows: 20px 800px 20px 30px 30px;
     grid-template-areas: ". topBar ." "leftBar mainDisplay rightBar" ". bottomBar ." "controlArea controlArea controlArea" "mainAreaBottom mainAreaBottom mainAreaBottom";
 }
-    /*MOVE BARS*/
-.moveBar{
+
+/*MOVE BARS*/
+
+.moveBar {
     background-color: #194162;
-    overflow:hidden;
-    display:flex;
+    overflow: hidden;
+    display: flex;
     justify-content: center;
 }
 
-.moveBar:hover{
-    background-color:#5a98ba;
+.moveBar:hover {
+    background-color: #5a98ba;
     transition: background-color 0.5s;
 }
 
 .moveUpBar {
     grid-area: topBar;
-    border-bottom:1px solid black;
+    border-bottom: 1px solid black;
     user-select: none;
 }
 
-.moveUpBar:hover{
-    margin-left:-20px;
-    margin-right:-20px;
-    border-left:1px solid black;
-    border-right:1px solid black;
+.moveUpBar:hover {
+    margin-left: -20px;
+    margin-right: -20px;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
 }
 
 .moveLeftBar {
     grid-area: leftBar;
-    border-right:1px solid black;
+    border-right: 1px solid black;
 }
 
 .moveLeftBar:hover {
-    margin-top:-20px;
-    margin-bottom:-20px;
-    border-top:1px solid black;
-    border-bottom:1px solid black;
+    margin-top: -20px;
+    margin-bottom: -20px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
 }
 
 .moveRightBar {
     grid-area: rightBar;
-    border-left:1px solid black;
+    border-left: 1px solid black;
 }
 
 .moveRightBar:hover {
-    margin-top:-20px;
-    margin-bottom:-20px;
-    border-top:1px solid black;
-    border-bottom:1px solid black;
+    margin-top: -20px;
+    margin-bottom: -20px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
 }
 
 .moveDownBar {
     grid-area: bottomBar;
-    border-top:1px solid black;
+    border-top: 1px solid black;
 }
 
 .moveDownBar:hover {
-    margin-left:-20px;
-    margin-right:-20px;
-    border-left:1px solid black;
-    border-right:1px solid black;
+    margin-left: -20px;
+    margin-right: -20px;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
 }
 
-.moveButtonImage{
+.moveButtonImage {
     display: block;
-    margin:auto;
+    margin: auto;
 }
 
-    /*MAIN CANVAS*/
-.mainDisplay{
+/*MAIN CANVAS*/
+
+.mainDisplay {
     grid-area: mainDisplay;
-    background-color:#020204;
+    background-color: #020204;
 }
 
-.mainCanvas{
-    width:1000px;
-    height:800px;
+.mainCanvas {
+    width: 1000px;
+    height: 800px;
 }
-    /*CONTROL BAR*/
-.controlArea{
-    grid-area:controlArea;
-    border-top:1px solid #020204;
-    display:grid;
+
+/*CONTROL BAR*/
+
+.controlArea {
+    grid-area: controlArea;
+    border-top: 1px solid #020204;
+    display: grid;
     grid-template-columns: 150px 740px 150px;
     grid-template-areas: "stateDisplay controlBar positionDisplay";
 }
 
-.controlBar{
-    grid-area:controlBar;
-    background-color:#04131e;
+.controlBar {
+    grid-area: controlBar;
+    background-color: #04131e;
 }
 
-.controlBlock{
-    display:inline-block;
-    width:243px;
-    font-size:16px;
-    color:#81bbda;
-    text-align:center;
+.controlBlock {
+    display: inline-block;
+    width: 243px;
+    font-size: 16px;
+    color: #81bbda;
+    text-align: center;
     vertical-align: top;
 }
 
-.controlButton{
-    height:28px;
-    background-color:#81bbda;
-}
-
-.controlIcon{
-    width:10px;
-    height:10px;
-}
-
-.numberInput{
-    width:20px;
-    background-color:#81bbda;
-}
-
-.mousePositionArea{
-    grid-area:positionDisplay;
-}
-
-.patternStateDisplayArea{
-    grid-area:stateDisplay;
-    background-color:#81bbda;
-    border:2px solid #07cff6;
-}
-
-    /*STATUS BAR*/
-.mainAreaBottom{
-    grid-area: mainAreaBottom;
-    background-color:#04131e;
-    border-top:1px solid #020204;
-}
-
-
-.statusBlock{
-    margin-left:5px;
-    display:inline-block;
-    color: white;
-    font-size: 12px;
-    vertical-align: middle;
-    padding-top:7px;
-    padding-bottom:7px;
-}
-
-.statusIcon{
-  vertical-align: middle;
-  width:12px;
-  height:12px;
-}
-
-.statusStaticText{
-    font-size:14px;
-    color:#81bbda;
-}
-
-.statusDataDisplay{
-    width:60px;
-}
-
-/*SECONDARY DISPLAY*/
-.secondaryArea {
-    grid-area: secondaryColumn;
-    background-color:#0d2534;
-    display:grid;
-    grid-template-rows:365px 415px 120px;
-    grid-template-areas: "secondaryAreaTop" "secondaryAreaMiddle" "secondaryAreaBottom";
-    border-left:1px solid #020204;
-}
-.secondaryAreaTop{
-    grid-area:secondaryAreaTop;
-    border-bottom:1px solid black;
-}
-.secondaryCanvasArea{
-    width:300px;
-    height:300px;
-    background-color:black;
-    margin-left:auto;
-    margin-right:auto;
-    margin-top:20px;
-}
-
-.secondaryCanvas {
-    width:300px;
-    height:300px;
-}
-.savePatternWrap{
-    margin-left:auto;
-    margin-right:auto;
-    margin-top:10px;
-    margin-bottom:10px;
-    width:300px;
-}
-
-.savePatternWrap button{
-    float:right;
-}
-.patternNameInput{
-    background-color:#81bbda;
-    height:20px;
-    width:220px;
-}
-.secondaryAreaMiddle{
-    grid-area: secondaryAreaMiddle;
-}
-
-.categorySelectWrap{
-    padding:5px;
-    color:#81bbda;
-}
-.patternListContainer{
-    overflow-y:scroll;
-    height:343px;
-    width:100%;
-}
-.patternListElement{
-    border:1px solid black;
-    margin-left:5px;
-    margin-right:5px;
-    background-color:#81bbda;
-    padding:5px;
-    font-size:1.1em;
-}
-
-.patternListElement button{
-    float:right;
+.controlButton {
+    height: 28px;
     background-color: #81bbda;
 }
 
-.areaTitle{
-    text-align: center;
-    color:#81bbda;
+.controlIcon {
+    width: 10px;
+    height: 10px;
+}
+
+.numberInput {
+    width: 20px;
+    background-color: #81bbda;
+}
+
+.mousePositionArea {
+    grid-area: positionDisplay;
+}
+
+.patternStateDisplayArea {
+    grid-area: stateDisplay;
+    background-color: #81bbda;
+    border: 2px solid #07cff6;
+}
+
+/*STATUS BAR*/
+
+.mainAreaBottom {
+    grid-area: mainAreaBottom;
+    background-color: #04131e;
+    border-top: 1px solid #020204;
+}
+
+.statusBlock {
+    margin-left: 5px;
+    display: inline-block;
+    color: white;
+    font-size: 12px;
+    vertical-align: middle;
+    padding-top: 7px;
+    padding-bottom: 7px;
+}
+
+.statusIcon {
+    vertical-align: middle;
+    width: 12px;
+    height: 12px;
+}
+
+.statusStaticText {
+    font-size: 14px;
+    color: #81bbda;
+}
+
+.statusDataDisplay {
+    width: 60px;
+}
+
+/*SECONDARY DISPLAY*/
+
+.secondaryArea {
+    grid-area: secondaryColumn;
+    background-color: #0d2534;
+    display: grid;
+    grid-template-rows: 365px 415px 120px;
+    grid-template-areas: "secondaryAreaTop" "secondaryAreaMiddle" "secondaryAreaBottom";
+    border-left: 1px solid #020204;
+}
+
+.secondaryAreaTop {
+    grid-area: secondaryAreaTop;
+    border-bottom: 1px solid black;
+}
+
+.secondaryCanvasArea {
+    width: 300px;
+    height: 300px;
+    background-color: black;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+}
+
+.secondaryCanvas {
+    width: 300px;
+    height: 300px;
+}
+
+.savePatternWrap {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 300px;
+}
+
+.savePatternWrap button {
+    float: right;
+}
+
+.patternNameInput {
+    background-color: #81bbda;
+    height: 20px;
+    width: 220px;
+}
+
+.patternFilterInput {
+    background-color: #81bbda;
+    height: 15px;
+}
+
+.secondaryAreaMiddle {
+    grid-area: secondaryAreaMiddle;
+}
+
+.categorySelectWrap {
+    padding: 5px;
+    color: #81bbda;
+}
+
+.patternListContainer {
+    overflow-y: scroll;
+    height: 328px;
+    width: 100%;
+}
+
+.filterButton {
+    background-color: #81bbda;
+}
+
+.patternListElement {
+    border: 1px solid black;
+    margin-left: 5px;
+    margin-right: 5px;
+    background-color: #81bbda;
+    padding: 5px;
     font-size: 1.1em;
-    padding:4px;
-    background-color:#04131e;
-    border-top:1px solid black;
-    border-bottom:1px solid black;
 }
 
-.secondaryAreaBottom{
+.patternListElement button {
+    float: right;
+    background-color: #81bbda;
+}
+
+.areaTitle {
+    text-align: center;
+    color: #81bbda;
+    font-size: 1.1em;
+    padding: 4px;
+    background-color: #04131e;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.secondaryAreaBottom {
     grid-area: secondaryAreaBottom;
-    background-color:#04131e;
-    border-top:1px solid #020204;
+    background-color: #04131e;
+    border-top: 1px solid #020204;
 }
 
-.messageBox{
-    height:93px;
-    width:390px;
-    background-color:black;
-    margin-left:auto;
-    margin-right:auto;
-    overflow-y:scroll;
-    overflow-x:hidden;
+.messageBox {
+    height: 93px;
+    width: 390px;
+    background-color: black;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-y: scroll;
+    overflow-x: hidden;
     word-wrap: break-word;
 }
 
-.alertMessage{
-    margin-left:5px;
-    margin-right:5px;
+.alertMessage {
+    margin-left: 5px;
+    margin-right: 5px;
+    padding: 5px;
+    padding-left: 50px;
+    text-indent: -40px;
+    font-size: 0.9em;
+}
+
+.floatLeft {
+    float: left;
+}
+
+.floatRight {
+    float: right;
+}
+
+.blackText {
+    color: black;
+}
+
+/*ModalWindow*/
+
+.modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    /* Stay in place */
+    z-index: 1;
+    /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%;
+    /* Full width */
+    height: 100%;
+    /* Full height */
+    overflow: auto;
+    /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0);
+    /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Black w/ opacity */
+}
+
+/* Modal Content/Box */
+
+.modal-content {
+    position: relative;
+    background-color: #0d2534;
+    margin: 10% auto;
+    border: 1px solid #888;
+    width: 700px;
+    display:grid;
+    grid-template-rows: 30px 400px;
+    grid-template-areas: "modalHeaderArea" "modalBodyArea";
+}
+
+/* The Close Button */
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover, .close:focus {
+    color: #07cff6;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modalHeader {
+    background-color:#04131e;
+    grid-area:modalHeaderArea;
     padding:5px;
-    padding-left:50px;
-    text-indent:-40px;
-    font-size:0.9em;
+    font-size:1.3em;
+    color:white;
 }
 
-.floatLeft{
-    float:left;
+.modalBody{
+    grid-area:modalBodyArea;
+    text-align:center;
+    vertical-align: middle;
+    padding:10px;
 }
 
-.floatRight{
-    float:right;
+.hashTextArea{
+    width:600px;
+    height:200px;
+    resize:none;
+}
+.modalText{
+    color:#81bbda;
+    font-size:1.1em;
+    margin:10px;
 }
 
-.blackText{
-    color:black;
+.hashExportWrap{
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+}
+
+.modalButton{
+    height: 35px;
+    background-color: #81bbda;
+    margin:20px;
 }

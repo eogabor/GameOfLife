@@ -1,7 +1,6 @@
 //TODO
 //!!KÓD takarítás 
 
-// menteni kívánt alakzat nevének validálása
 // stop/start actionok -> külön függvény
 //iteration megjelenítésre/módosításra függvény
 //gyorsításnál curr iteration megmaradásra valami szebbet kitalálni
@@ -49,6 +48,72 @@ function showAlert(alertString, type) {
     $("messageBox").scrollTop = $("messageBox").scrollHeight;
 }
 
+// LZW-compress a string
+function lzw_encode(s) {
+    var dict = {};
+    var data = (s + "").split("");
+    var out = [];
+    var currChar;
+    var phrase = data[0];
+    var code = 256;
+    for (var i=1; i<data.length; i++) {
+        currChar=data[i];
+        if (dict[phrase + currChar] != null) {
+            phrase += currChar;
+        }
+        else {
+            out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
+            dict[phrase + currChar] = code;
+            code++;
+            phrase=currChar;
+        }
+    }
+    out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
+    for (var i=0; i<out.length; i++) {
+        out[i] = String.fromCharCode(out[i]);
+    }
+    return out.join("");
+}
+
+// Decompress an LZW-encoded string
+function lzw_decode(s) {
+    var dict = {};
+    var data = (s + "").split("");
+    var currChar = data[0];
+    var oldPhrase = currChar;
+    var out = [currChar];
+    var code = 256;
+    var phrase;
+    for (var i=1; i<data.length; i++) {
+        var currCode = data[i].charCodeAt(0);
+        if (currCode < 256) {
+            phrase = data[i];
+        }
+        else {
+           phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
+        }
+        out.push(phrase);
+        currChar = phrase.charAt(0);
+        dict[code] = oldPhrase + currChar;
+        code++;
+        oldPhrase = phrase;
+    }
+    return out.join("");
+}
+
+function encode_utf8(s) {
+    return encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,
+        function toSolidBytes(match, p1) {
+            return String.fromCharCode('0x' + p1);
+        });
+}
+
+function decode_utf8(s) {
+    return decodeURIComponent(s.split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+}
+
 //MODELL
 class Modell {
     constructor(cols, rows, gameType) {
@@ -93,6 +158,9 @@ class Modell {
         this.speed = 4;
         this.intervalID = undefined;
         $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
+        $('totalIterationsDisplay').innerHTML = this.iterationsCounter;
+        $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
+        this.start();
     }
 
     nextGen() {
@@ -302,6 +370,39 @@ class Modell {
         this.redrawEventTarget.dispatchEvent(new Event('redrawEvent'));
     }
 
+    exportGrid() {
+        if (this.state !== 0) return;
+        let binaryString = "";
+
+        for (let i = 0; i < this.grid.length; i++) {
+            for (let j = 0; j < this.grid[0].length; j++) {
+                binaryString += this.grid[i][j].toString();
+            }
+        }
+
+        let encoded = lzw_encode(binaryString);
+
+        return encode_utf8(encoded);
+    }
+
+    importGrid(gridString) {
+        if (this.state === 1) {
+            this.stop();
+        }
+        
+        let stringDecoded = decode_utf8(gridString);
+        stringDecoded=lzw_decode(stringDecoded);
+
+        for (let i = 0; i < this.grid.length; i++) {
+            for (let j = 0; j < this.grid[0].length; j++) {
+                this.grid[i][j] = parseInt(stringDecoded[(i * (this.grid[0].length)) + j]);
+            }
+        }
+        this.optimalizedGrid = this.grid.map(arr => [...arr]);
+        this.dispatchReDrawEvent();
+        showAlert("Succesful import!",'tip');
+    }
+
 }
 
 //VIEW
@@ -405,6 +506,7 @@ class View {
             startPointY: undefined,
             patternGrid: undefined,
         }
+        this.patternMode = 0;
 
         this.redrawFlag = 1; //Ha a flag értéke 1 akkor az egész gridet rajzoljuk ki, ha 0 akkor csak a módosult cellákat
 
@@ -522,7 +624,7 @@ class View {
 
         let currResolution = this.resolutions[this.zoom];
 
-        const rect = canvas.getBoundingClientRect(); 0
+        const rect = canvas.getBoundingClientRect();
         const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
         const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
 
@@ -725,9 +827,10 @@ class View {
 
         let nameInput = $("selectedAreaName").value;
 
-        if (!this.validateName()) return;
-
-        debugger;
+        if (!this.validateName()){
+            showAlert("There is already a pattern with this name!", "alert");
+            return;
+        } 
 
         let grid = this.modell.getSelectedArea();
         this.Persistence.saveSelectedArea({
@@ -740,7 +843,7 @@ class View {
     }
 
     validateName(nameString) {
-        return true;
+        return this.Persistence.validateName(nameString);
     }
 
     //Hogy le lehessen venni az event listenert
@@ -900,19 +1003,19 @@ class View {
 
         let maxSize = sizeX > sizeY ? sizeX : sizeY;
         let resolution = Math.floor(300 / maxSize);
-        let offSetX = Math.floor((300-resolution*sizeX)/2);
-        let offSetY = Math.floor((300-resolution*sizeY)/2);
+        let offSetX = Math.floor((300 - resolution * sizeX) / 2);
+        let offSetY = Math.floor((300 - resolution * sizeY) / 2);
 
         for (let col = 0; col < sizeX; col++) {
             for (let row = 0; row < sizeY; row++) {
                 const cell = grid[col][row];
 
                 this.selectctx.beginPath();
-                this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
+                this.selectctx.rect(offSetX + col * resolution, offSetY + row * resolution, resolution, resolution);
 
                 if (cell === 0) {
                     this.selectctx.fillStyle = "black";
-                    if(resolution>=12){
+                    if (resolution >= 12) {
                         this.selectctx.strokeStyle = '#5a98ba';
                     }
                 } else {
@@ -935,16 +1038,16 @@ class View {
 
         let maxSize = sizeX > sizeY ? sizeX : sizeY;
         let resolution = Math.floor(300 / maxSize);
-        let offSetX = Math.floor((300-resolution*sizeX)/2);
-        let offSetY = Math.floor((300-resolution*sizeY)/2);
+        let offSetX = Math.floor((300 - resolution * sizeX) / 2);
+        let offSetY = Math.floor((300 - resolution * sizeY) / 2);
 
         for (let col = 0; col < sizeX; col++) {
             for (let row = 0; row < sizeY; row++) {
                 if (col === 0 || col === sizeX - 1 || row === 0 || row === sizeY - 1) {
                     this.selectctx.beginPath();
-                    this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
+                    this.selectctx.rect(offSetX + col * resolution, offSetY + row * resolution, resolution, resolution);
                     this.selectctx.fillStyle = "black";
-                    if(resolution>=12){
+                    if (resolution >= 12) {
                         this.selectctx.strokeStyle = '#5a98ba';
                     }
                     this.selectctx.fill();
@@ -953,11 +1056,11 @@ class View {
                     const cell = grid[col - 1][row - 1];
 
                     this.selectctx.beginPath();
-                    this.selectctx.rect(offSetX+col * resolution, offSetY+row * resolution, resolution, resolution);
+                    this.selectctx.rect(offSetX + col * resolution, offSetY + row * resolution, resolution, resolution);
 
                     if (cell === 0) {
                         this.selectctx.fillStyle = "black";
-                        if(resolution>=12){
+                        if (resolution >= 12) {
                             this.selectctx.strokeStyle = '#5a98ba';
                         }
                     } else {
@@ -1001,9 +1104,10 @@ class Persistence {
             .then(response => response.json())
             .then(data => {
                 for (let i = 0; i < data.length; i++) {
-                    this.addListElement(data[i]);
+                    this.addElement(data[i], data[i].categoryName);
                 }
                 this.dataLoaded++;
+                this.renderList();
             });
 
         //Local StorageBan tárolt alakzatok betöltése
@@ -1017,31 +1121,85 @@ class Persistence {
         localData = JSON.parse(localData);
         this.localStorageData = localData;
         for (let i = 0; i < localData.length; i++) {
-            this.addListElement(localData[i]);
+            this.addElement(localData[i], "UserDefined");
         }
 
         this.dataLoaded++;
+        this.renderList();
+
+        $("categorySelect").addEventListener('change', () => { $("patternFilter").value = ''; this.renderList(); });
+        $("filterButton").addEventListener('click', () => this.renderList());
     }
 
-    addListElement(element) {
+    deletePattern(elementName) {
+        debugger;
+        for (let i = 0; i < this.patternList.length; i++) {
+            if (this.patternList[i].name === elementName) {
+                this.patternList.splice(i, 1);
+            }
+        }
+        for (let i = 0; i < this.localStorageData.length; i++) {
+            if (this.localStorageData[i].name === elementName) {
+                this.localStorageData.splice(i, 1);
+            }
+        }
+        $("listElement-" + elementName).remove();
+        localStorage.setItem("GOF_savedPatterns", JSON.stringify(this.localStorageData));
+    }
+
+    addElement(element, categoryName) {
+        element.categoryName = categoryName;
         this.patternList.push(element);
+    }
 
-        let iLi = document.createElement('li');
-        iLi.id = "listElement-" + element.name;
-        iLi.innerHTML = element.name;
-        iLi.className = "patternListElement";
+    renderList() {
+        if (this.dataLoaded !== 2) return;
 
-        let selectButton = document.createElement("button");
-        selectButton.innerHTML = "Select";
+        let selectedCategory = $("categorySelect").value;
+        $("patternList").innerHTML = '';
 
-        let deleteButton = document.createElement("button");
-        deleteButton.innerHTML = "Delete";
+        if (selectedCategory === "All") {
+            for (let i = 0; i < this.patternList.length; i++) {
+                let element = this.patternList[i];
+                if (!element.name.includes($("patternFilter").value)) continue;
 
-        iLi.appendChild(selectButton);
-        iLi.appendChild(deleteButton);
+                let iLi = document.createElement('li');
+                iLi.id = "listElement-" + element.name;
+                iLi.innerHTML = element.name;
+                iLi.className = "patternListElement";
 
+                if (element.categoryName === "UserDefined") {
+                    let deleteButton = document.createElement("button");
+                    deleteButton.addEventListener('click', () => this.deletePattern(element.name));
+                    deleteButton.innerHTML = "Delete";
 
-        $("patternList").appendChild(iLi);
+                    iLi.appendChild(deleteButton);
+                }
+
+                $("patternList").appendChild(iLi);
+            }
+        } else {
+            for (let i = 0; i < this.patternList.length; i++) {
+                let element = this.patternList[i];
+                if (element.categoryName !== selectedCategory) continue;
+                if (!element.name.includes($("patternFilter").value)) continue;
+
+                let iLi = document.createElement('li');
+                iLi.id = "listElement-" + element.name;
+                iLi.innerHTML = element.name;
+                iLi.className = "patternListElement";
+
+                if (element.categoryName === "UserDefined") {
+                    let deleteButton = document.createElement("button");
+                    deleteButton.addEventListener('click', () => this.deletePattern(element.name));
+                    deleteButton.innerHTML = "Delete";
+
+                    iLi.appendChild(deleteButton);
+                }
+
+                $("patternList").appendChild(iLi);
+            }
+        }
     }
 
     getPattern(patternName) {
@@ -1060,7 +1218,17 @@ class Persistence {
     saveSelectedArea(pattern) {
         this.localStorageData.push(pattern);
         localStorage.setItem("GOF_savedPatterns", JSON.stringify(this.localStorageData));
-        this.addListElement(pattern);
+        this.addElement(pattern, "UserDefined");
+        this.renderList();
+    }
+
+    validateName(name){
+        for(let i=0;i<this.patternList.length;i++){
+            if(this.patternList[i].name===name){
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -1090,10 +1258,23 @@ class MainController {
         $('stepValueInput').disabled = true;
         $('categorySelect').disabled = true;
         $('selectedAreaName').disabled = true;
+        $('filterButton').disabled = true;
+        $('patternFilter').disabled = true;
 
         //eventListeners
         $("newEmptyGameButton").addEventListener('click', () => this.startGame("blank"));
         $("newRandomGameButton").addEventListener('click', () => this.startGame("random"));
+
+        $('exportButton').addEventListener('click', () => this.openExportModal());
+        $('importButton').addEventListener('click', () => this.openImportModal());
+
+        $('ExportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ExportModal').style.display = 'none' });
+        $('ImportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ImportModal').style.display = 'none' });
+
+        $('copyToClipBoardButton').addEventListener('click', () => this.copyToClipBoard());
+        $('importModalButton').addEventListener('click', () => this.importState());
+        $('importSelect').addEventListener('change',()=>this.importSelectHandler());
+
 
         //hideitems
         $('patternModeDisplay').style.display = "none";
@@ -1114,14 +1295,112 @@ class MainController {
             $('stepValueInput').disabled = false;
             $('categorySelect').disabled = false;
             $('selectedAreaName').disabled = false;
+            $('filterButton').disabled = false;
+            $('patternFilter').disabled = false;
             //start
             this.View.start();
             this.state = 1;
         } else {
             this.View.reset(gameType);
-            this.View.modell.start();
         }
-        showAlert("New " + gameType + " game started!", "tip");
+        showAlert("New " + (gameType === "blank" ? "empty" : gameType) + " game started!", "tip");
+    }
+
+    openExportModal() {
+        if (this.state !== 1 || this.View.modell.state !== 0) {
+            showAlert("To export the current grid, there has to be an active game with STOPPED status!", "alert")
+            return;
+        }
+        let element = $('ExportModal');
+        element.style.display = 'block';
+
+        $('hashExport').value = this.View.modell.exportGrid();
+    }
+
+    openImportModal() {
+        $('hashImport').value="";
+        this.fetchExports();
+        let element = $('ImportModal');
+        element.style.display = 'block';
+    }
+
+    fetchExports() {
+        $('importSelect').innerHTML = '<option value="Custom">Custom</option>';
+
+        fetch('exports.json')
+            .then(response => response.json())
+            .then(data => {
+                for (let i = 0; i < data.length; i++) {
+                    let iOption = document.createElement('option');
+                    iOption.value=data[i].name;
+                    iOption.innerHTML=data[i].name;
+                    $("importSelect").appendChild(iOption);
+                }
+            });
+    }
+
+    importSelectHandler(){
+        if($('importSelect').value==="Custom"){
+            $('hashImport').readOnly="false";
+        }else{
+            $('hashImport').readOnly="true";
+            fetch('exports.json')
+            .then(response => response.json())
+            .then(data => {
+                for (let i = 0; i < data.length; i++) {
+                    if(data[i].name===$('importSelect').value){
+                        $('hashImport').value=data[i].code;
+                    }
+                }
+            });
+        }
+    }
+
+    importState() {
+        let gridString = $('hashImport').value;
+        let stringDecoded = decode_utf8(gridString);
+        stringDecoded=lzw_decode(stringDecoded);
+        let invalidFlag=0;
+        if(stringDecoded.length!==200000) invalidFlag=1;
+        for(let i=0;i<stringDecoded.length;i++){
+            if(stringDecoded[i]!=='0' &&stringDecoded[i]!=='1'){
+                invalidFlag=1;
+                break;
+            } 
+        }
+        if(invalidFlag===1){
+            showAlert("The given import codes's format was invalid!",'alert');
+            return;
+        }
+
+        if (this.state === 0) {
+            this.View = new View(this.mainCanvas, 1000, 800, this.secondaryCanvas, 'blank');
+            //enable controls
+            var buttons = document.querySelectorAll(".controlButton");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = false;
+            }
+            $('stepValueInput').disabled = false;
+            $('categorySelect').disabled = false;
+            $('selectedAreaName').disabled = false;
+            $('filterButton').disabled = false;
+            $('patternFilter').disabled = false;
+            this.View.start();
+            this.state = 1;
+        } else {
+            this.View.reset('blank');
+        }
+        
+        this.View.modell.importGrid(gridString);
+
+        $('ImportModal').style.display = 'none'
+    }
+
+
+    copyToClipBoard() {
+        var copyText = $('hashExport').select();
+        document.execCommand('copy');
+        $('copyToClipBoardButton').innerHTML = "Content copied!"
     }
 }
 

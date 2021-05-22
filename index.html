@@ -23,8 +23,8 @@
                             </ul>
                         </div>
                     </li>
-                    <li>Export</li>
-                    <li>Import</li>
+                    <li id="exportButton">Export</li>
+                    <li id="importButton">Import</li>
                 </ul>
             </div>
         </div>
@@ -108,9 +108,15 @@
                 <div class="categorySelectWrap">
                     <label for="categories">Choose a category:</label>
                     <select name="categories" id="categorySelect">
+                        <option value="All">All</option>
                         <option value="Basic">Basic</option>
-                        <option value="Custom">Custom</option>
+                        <option value="UserDefined">User defined</option>
                     </select>
+                </div>
+                <div class="categorySelectWrap">
+                    <label for="categories">Filter patterns:</label>
+                    <input type="text" id="patternFilter" class="patternFilterInput">
+                    <button id="filterButton" class="filterButton">Filter</button>
                 </div>
                 <div class="patternListContainer">
                     <ul id="patternList">
@@ -127,6 +133,55 @@
             </div>
         </div>
     </div>
+    <!-- Modal Windows-->
+    <!--Export Modal-->
+    <div id="ExportModal" class="modal">
+
+
+        <div class="modal-content">
+            <div class="modalHeader">
+                Export gamestate
+                <span class="close">&times;</span>
+            </div>
+            <div class="modalBody">
+                <div class="modalText">
+                    To export your current grid, simply copy the content of this text area, or click on the "Copy to Clipboard" button.<br>
+                    To import the current grid later, you will have to input this code in the "Import" window. 
+                </div>
+                <div class="hashExportWrap">
+                    <textarea id="hashExport" readonly="readonly" class="hashTextArea"></textarea>
+                </div>
+                <button id="copyToClipBoardButton" class="modalButton">Copy to Clipboard</button>
+            </div>
+        </div>
+
+    </div>
+    <!--Import Modal-->
+    <div id="ImportModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <div class="modalHeader">
+                Import gamestate
+                <span class="close">&times;</span>
+            </div>
+            <div class="modalBody">
+                <div class="modalText">
+                    To import an existing game state, copy a previously exported state's code below, or chose an importable state from the list. Then click on the "Import" button.
+                </div>
+                <select id="importSelect">
+                    <option value="Custom">Custom</option>
+                </select>
+                <div class="hashExportWrap">
+                    <textarea id="hashImport" class="hashTextArea"></textarea>
+                </div>
+                <button id="importModalButton" class="modalButton">Import</button>
+            </div>
+            
+        </div>
+
+    </div>
+
     <script src="design.js"></script>
     <script src="index.js"></script>
 </body>
