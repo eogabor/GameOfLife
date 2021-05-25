@@ -25,6 +25,7 @@
                     </li>
                     <li id="exportButton">Export</li>
                     <li id="importButton">Import</li>
+                    <li id="helpButton">Help</li>
                 </ul>
             </div>
         </div>
@@ -145,8 +146,9 @@
             </div>
             <div class="modalBody">
                 <div class="modalText">
-                    To export your current grid, simply copy the content of this text area, or click on the "Copy to Clipboard" button.<br>
-                    To import the current grid later, you will have to input this code in the "Import" window. 
+                    To export your current grid, simply copy the content of this text area, or click on the "Copy to
+                    Clipboard" button.<br>
+                    To import the current grid later, you will have to input this code in the "Import" window.
                 </div>
                 <div class="hashExportWrap">
                     <textarea id="hashExport" readonly="readonly" class="hashTextArea"></textarea>
@@ -167,7 +169,8 @@
             </div>
             <div class="modalBody">
                 <div class="modalText">
-                    To import an existing game state, copy a previously exported state's code below, or chose an importable state from the list. Then click on the "Import" button.
+                    To import an existing game state, copy a previously exported state's code below, or chose an
+                    importable state from the list. Then click on the "Import" button.
                 </div>
                 <select id="importSelect">
                     <option value="Custom">Custom</option>
@@ -177,7 +180,19 @@
                 </div>
                 <button id="importModalButton" class="modalButton">Import</button>
             </div>
-            
+
+        </div>
+
+    </div>
+    <div id="HelpModal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content help-content">
+            <div class="modalHeader">
+                Control functions
+                <span class="close">&times;</span>
+            </div>
+            <img src="controlfunctions.jpeg" class="help-image">
         </div>
 
     </div>

@@ -1,9 +1,8 @@
 //TODO
 //!!KÓD takarítás 
 
-// stop/start actionok -> külön függvény
-//iteration megjelenítésre/módosításra függvény
-//gyorsításnál curr iteration megmaradásra valami szebbet kitalálni
+//üres név/filter input esetén szóljunk
+//ures filter eredmény esetén üzenet
 
 
 function $(element) {
@@ -56,8 +55,8 @@ function lzw_encode(s) {
     var currChar;
     var phrase = data[0];
     var code = 256;
-    for (var i=1; i<data.length; i++) {
-        currChar=data[i];
+    for (var i = 1; i < data.length; i++) {
+        currChar = data[i];
         if (dict[phrase + currChar] != null) {
             phrase += currChar;
         }
@@ -65,11 +64,11 @@ function lzw_encode(s) {
             out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
             dict[phrase + currChar] = code;
             code++;
-            phrase=currChar;
+            phrase = currChar;
         }
     }
     out.push(phrase.length > 1 ? dict[phrase] : phrase.charCodeAt(0));
-    for (var i=0; i<out.length; i++) {
+    for (var i = 0; i < out.length; i++) {
         out[i] = String.fromCharCode(out[i]);
     }
     return out.join("");
@@ -84,13 +83,13 @@ function lzw_decode(s) {
     var out = [currChar];
     var code = 256;
     var phrase;
-    for (var i=1; i<data.length; i++) {
+    for (var i = 1; i < data.length; i++) {
         var currCode = data[i].charCodeAt(0);
         if (currCode < 256) {
             phrase = data[i];
         }
         else {
-           phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
+            phrase = dict[currCode] ? dict[currCode] : (oldPhrase + currChar);
         }
         out.push(phrase);
         currChar = phrase.charAt(0);
@@ -109,7 +108,7 @@ function encode_utf8(s) {
 }
 
 function decode_utf8(s) {
-    return decodeURIComponent(s.split('').map(function(c) {
+    return decodeURIComponent(s.split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 }
@@ -117,18 +116,22 @@ function decode_utf8(s) {
 //MODELL
 class Modell {
     constructor(cols, rows, gameType) {
-        this.speeds = [25, 50, 100, 250, 500, 750, 1000, 1500, 2000];
+        this.speeds = [25, 50, 100, 250, 500, 750, 1000, 1500, 2000];//hány ezredmásodőerc telik el az iterációk között
 
         this.cols = cols;
         this.rows = rows;
+
         this.grid = buildGrid(cols, rows, gameType);
+        this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
+        this.selectedArea = undefined;
+
         this.gridLog = [];
         this.iterationsCounter = 0;
         this.currentIterationsCounter = 0;
 
-        this.optimalizedGrid = this.grid.map(arr => [...arr]); // kezdetleg az alap grid van benne, de később csak az előző állapothoz viszonyított változásokat tartalmazza
+        
 
-        this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
+        this.state = 0; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
         this.speed = 4;
         this.intervalID = undefined;
 
@@ -143,6 +146,8 @@ class Modell {
         $('slowDownButton').addEventListener('click', () => this.slowDown());
         $('stepBackButton').addEventListener('click', (e) => this.timeManagment(e));
         $('stepForwardButton').addEventListener('click', (e) => this.timeManagment(e));
+
+        this.setMainButton("START");
     }
 
     reset(gameType) {
@@ -154,17 +159,16 @@ class Modell {
         this.currentIterationsCounter = 0;
 
         this.optimalizedGrid = this.grid.map(arr => [...arr]);
-        this.state = undefined; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
+        this.state = 0; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
         this.speed = 4;
         this.intervalID = undefined;
         $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
         $('totalIterationsDisplay').innerHTML = this.iterationsCounter;
         $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
-        this.start();
+        this.setMainButton("START");
     }
 
     nextGen() {
-        //console.log(this.speeds[this.speed]);
         this.gridLogPush(this.grid.map(arr => [...arr]));
         const nextGen = this.grid.map(arr => [...arr]);
         const optGrid = [...Array(this.cols)].map(e => Array(this.rows));
@@ -213,13 +217,7 @@ class Modell {
         if (this.state === 0 || this.state === undefined) {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
-            $('startButton').disabled = true;
-            $('stopButton').disabled = false;
-
-            $('startButton').style.display = "none";
-            $('stopButton').style.display = "inline-block";
-            $("statusIcon").src = "runningStatus.png";
-            $('statusDisplay').innerHTML = "RUNNING";
+           this.setMainButton("STOP");
             $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
             this.dispatchReDrawEvent();
         } else {
@@ -231,6 +229,17 @@ class Modell {
         if (this.state === 1) {
             clearInterval(this.intervalID);
             this.state = 0;
+            this.setMainButton("START");
+
+            this.currentIterationsCounter = 0;
+            this.dispatchReDrawEvent();
+        } else {
+            showAlert("The simulation must be running before you can stop it!", "warning");
+        }
+    }
+
+    setMainButton(buttonName){
+        if(buttonName==="START"){
             $('startButton').disabled = false;
             $('stopButton').disabled = true;
 
@@ -238,11 +247,15 @@ class Modell {
             $('stopButton').style.display = "none";
             $("statusIcon").src = "stoppedStatus.png";
             $('statusDisplay').innerHTML = "STOPPED";
+        }
+        if(buttonName==="STOP"){
+            $('startButton').disabled = true;
+            $('stopButton').disabled = false;
 
-            this.currentIterationsCounter = 0;
-            this.dispatchReDrawEvent();
-        } else {
-            showAlert("The simulation must be running before you can stop it!", "warning");
+            $('startButton').style.display = "none";
+            $('stopButton').style.display = "inline-block";
+            $("statusIcon").src = "runningStatus.png";
+            $('statusDisplay').innerHTML = "RUNNING"
         }
     }
 
@@ -255,29 +268,38 @@ class Modell {
     }
 
     speedUp() {
-        if (this.state === 1 && this.speed > 0) {
-            let temp = this.currentIterationsCounter;
-            this.speed -= 1;
+        if (this.speed > 0) {
+
+            this.speed-=1;
             $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
-            this.stop();
-            this.currentIterationsCounter = temp;
-            this.start();
+            clearInterval(this.intervalID);
+            if(this.state===1){
+                this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
+            }
+            this.dispatchReDrawEvent();
         } else {
-            showAlert("You have reached maximum iteration speed!", "warning");
+
+            if(this.speed<=0){
+                showAlert("You have reached maximum iteration speed!", "warning");
+            }
         }
 
     }
 
     slowDown() {
-        if (this.state === 1 && this.speed < 8) {
-            let temp = this.currentIterationsCounter;
-            this.speed += 1;
+        if (this.speed < 8) {
+
+            this.speed+=1;
             $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
-            this.stop();
-            this.currentIterationsCounter = temp;
-            this.start();
+            clearInterval(this.intervalID);
+            if(this.state===1){
+                this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
+            }
+            this.dispatchReDrawEvent();
         } else {
-            showAlert("You have reached minimal iteration speed!", "warning ");
+            if(this.speed>=8){
+                showAlert("You have reached minimal iteration speed!", "warning ");
+            }
         }
 
     }
@@ -349,7 +371,7 @@ class Modell {
 
     timeManagment(e) {
         if (this.state === 0) {
-            let stepSize = parseInt($("stepValueDisplay").value);
+            let stepSize = parseInt($("stepValueInput").value);
             if (e.target.id === "stepBackButton") {
                 stepSize = -stepSize;
             }
@@ -389,9 +411,9 @@ class Modell {
         if (this.state === 1) {
             this.stop();
         }
-        
+
         let stringDecoded = decode_utf8(gridString);
-        stringDecoded=lzw_decode(stringDecoded);
+        stringDecoded = lzw_decode(stringDecoded);
 
         for (let i = 0; i < this.grid.length; i++) {
             for (let j = 0; j < this.grid[0].length; j++) {
@@ -400,7 +422,7 @@ class Modell {
         }
         this.optimalizedGrid = this.grid.map(arr => [...arr]);
         this.dispatchReDrawEvent();
-        showAlert("Succesful import!",'tip');
+        showAlert("Succesful import!", 'tip');
     }
 
 }
@@ -408,10 +430,10 @@ class Modell {
 //VIEW
 class View {
     constructor(canvas, width, height, selectCanvas, gameType) {
-        this.resolutions = [2, 4, 8, 20, 40, 100];
+        this.resolutions = [2, 4, 8, 20, 40, 100]; //ezek a felbontások osztják fel optimálisan a 1000*800 as fő megjelenítőt, nagyítási szintenként
 
         this.canvas = canvas;
-        this.modell = new Modell(500, 400, gameType);
+        this.modell = new Modell(500, 400, gameType);//A legkisebb felbontásban pont ennyi oszlop és sor tölti ki a fő megjelenítőt
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
@@ -458,16 +480,19 @@ class View {
         this.userActions = [];
         this.redoArray = [];
 
+        this.mouseX=undefined;
+        this.mouseY=undefined;
+
         $('patternModeDisplay').style.display = "none";
         $("zoomLevelDisplay").innerHTML = 1 + this.zoom + "/6";
 
         //EVENT LISTENERS
-        $('mainCanvas').addEventListener('wheel', (e) => this.handleZoom(this.canvas, e));
+        $('mainCanvas').addEventListener('wheel', (e) => this.handleZoom(e));
         $('moveLeftBar').addEventListener('click', (e) => this.moveView(e));
         $('moveUpBar').addEventListener('click', (e) => this.moveView(e));
         $('moveDownBar').addEventListener('click', (e) => this.moveView(e));
         $('moveRightBar').addEventListener('click', (e) => this.moveView(e));
-        $('mainCanvas').addEventListener('click', (e) => this.canvasCellClick(this.canvas, e));
+        $('mainCanvas').addEventListener('click', (e) => this.canvasCellClick(e));
         $('mainCanvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
         $('selectButton').addEventListener('click', () => this.switchSelectMode());
         $("patternList").addEventListener('click', (e) => this.patternModeOn(e));
@@ -476,14 +501,16 @@ class View {
         $('redoButton').addEventListener('click', () => this.redoUserAction());
         $('saveSelectedAreaButton').addEventListener('click', () => this.saveSelectedArea());
 
-        $("mainCanvas").addEventListener('mousemove', (e) => this.positionDisplay(this.canvas, e));
+        $("mainCanvas").addEventListener('mousemove',(e)=>this.refreshMousePosition(this.canvas,e));
 
         this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
     }
 
     reset(gameType) {
+        //reset UI and modell
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
+        this.patternModeOff();
+        this.selectModeOff();
         this.modell.reset(gameType);
 
         //reseting view attributes
@@ -501,13 +528,6 @@ class View {
             startY: undefined,
         };
 
-        this.patternData = {
-            startPointX: undefined,
-            startPointY: undefined,
-            patternGrid: undefined,
-        }
-        this.patternMode = 0;
-
         this.redrawFlag = 1; //Ha a flag értéke 1 akkor az egész gridet rajzoljuk ki, ha 0 akkor csak a módosult cellákat
 
         this.renderBin = [];
@@ -519,27 +539,25 @@ class View {
 
     }
 
-    positionDisplay(canvas, e) {
-        let currResolution = this.resolutions[this.zoom];
-
-        const rect = canvas.getBoundingClientRect(); 0
-        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
-
-        $('rowDisplay').innerHTML = y;
-        $('columnDisplay').innerHTML = x;
-    }
-
-    handleZoom(canvas, e) {
-        e.preventDefault();
-
+    refreshMousePosition(canvas,e){
         let currResolution = this.resolutions[this.zoom];
 
         const rect = canvas.getBoundingClientRect();
-        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+        this.mouseX = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
+        this.mouseY = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
 
-        //Hogy ne tekerje izomból
+        $('rowDisplay').innerHTML = this.mouseX;
+        $('columnDisplay').innerHTML = this.mouseY;
+    }
+
+
+    handleZoom(e) {
+        e.preventDefault();
+
+        const x = this.mouseX;
+        const y = this.mouseY;
+
+        //Hogy ne tekerjen túl nagyot
         let wheel = 0;
         if (e.deltaY > 0) {
             wheel = -1;
@@ -611,7 +629,7 @@ class View {
         this.renderStartY = startPointY;
     }
 
-    canvasCellClick(canvas, e) {
+    canvasCellClick(e) {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode !== 0) {
             //Csak álló állapotban lehessen módosítani a modellen, ha nem select módban vagyunk,alertet küldeni
@@ -621,12 +639,9 @@ class View {
             return;
         }
 
-
-        let currResolution = this.resolutions[this.zoom];
-
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+        this.refreshMousePosition(this.canvas,e)
+        const x = this.mouseX;
+        const y = this.mouseY;
 
         if (this.patternMode === 0) {
             this.modell.manageCell(x, y);
@@ -668,10 +683,11 @@ class View {
     undoUserAction() {
         if (this.modell.state !== 0) {
             showAlert("You must stop the simulation, to undo/redo actions.", "warning");
+            return;
         }
 
         if (this.userActions.length === 0) {
-            showAlert("No more saved actions left.");
+            showAlert("No more saved actions left.","warning");
             return;
         }
 
@@ -688,6 +704,7 @@ class View {
     redoUserAction() {
         if (this.modell.state !== 0) {
             showAlert("You must stop the simulation, to undo/redo actions.", "warning");
+            return;
         }
 
         if (this.redoArray.length === 0) {
@@ -759,34 +776,36 @@ class View {
             return;//alert hogy állítsa meg a kijelöléshez
         }
 
-
         if (this.selectMode !== 0) {//SELECT MÓD KIVESZ
-
-            if (this.selectMode === 2 || this.selectMode === 3) {
-                $('mainCanvas').removeEventListener('mousemove', this.selectHandler);
-
-                this.selectedArea = {
-                    xMin: undefined,
-                    xMax: undefined,
-                    yMin: undefined,
-                    yMax: undefined,
-                    startX: undefined,
-                    startY: undefined,
-                }
-
-                this.modell.delSelectedArea();
-                this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
-            }
-
-            this.selectMode = 0;
-            this.setReDrawFlag();
-            $('startButton').disabled = false;
-            $('selectButton').style.backgroundColor = '#81bbda';
+            this.selectModeOff();
         } else if (this.selectMode === 0) {//SELECT MÓD BERAK
             this.selectMode = 1;
             $('startButton').disabled = true;
             $('selectButton').style.backgroundColor = '#07cff6';
         }
+    }
+
+    selectModeOff(){
+        if (this.selectMode === 2 || this.selectMode === 3) {
+            $('mainCanvas').removeEventListener('mousemove', this.selectHandler);
+
+            this.selectedArea = {
+                xMin: undefined,
+                xMax: undefined,
+                yMin: undefined,
+                yMax: undefined,
+                startX: undefined,
+                startY: undefined,
+            }
+
+            this.modell.delSelectedArea();
+            this.selectctx.clearRect(0, 0, this.selectCanvas.width, this.selectCanvas.height);
+        }
+
+        this.selectMode = 0;
+        this.setReDrawFlag();
+        $('startButton').disabled = false;
+        $('selectButton').style.backgroundColor = '#81bbda';
     }
 
     canvasSelectClick(canvas, e) {
@@ -815,35 +834,6 @@ class View {
 
             this.selectMode = 3;
         }
-
-        //TODO 3-as mód megvalósítása
-    }
-
-    saveSelectedArea() {
-        if (this.selectMode !== 3) {
-            showAlert("You have to select an area, before saving it!", "alert");
-            return;
-        }
-
-        let nameInput = $("selectedAreaName").value;
-
-        if (!this.validateName()){
-            showAlert("There is already a pattern with this name!", "alert");
-            return;
-        } 
-
-        let grid = this.modell.getSelectedArea();
-        this.Persistence.saveSelectedArea({
-            "name": nameInput,
-            "pattern": grid.map(arr => [...arr])
-        });
-
-        this.switchSelectMode();
-        $("selectedAreaName").value = "";
-    }
-
-    validateName(nameString) {
-        return this.Persistence.validateName(nameString);
     }
 
     //Hogy le lehessen venni az event listenert
@@ -867,39 +857,55 @@ class View {
             if (startX - x + 1 <= 50) {
                 this.selectedArea.xMin = x;
                 this.selectedArea.xMax = startX;
-            } else {
-                showAlert("The selected area can be maximum 50 cells wide.", "warning")
-                //HIBA ÜZENET : NEM LEHET 100nál szélesebbet kijelölni
             }
         }
         if (x > xMax || (x > xMin && x < xMax)) {
             if (x - startX + 1 <= 50) {
                 this.selectedArea.xMax = x;
                 this.selectedArea.xMin = startX;
-            } else {
-                showAlert("The selected area can be maximum 50 cells high.", "warning")
             }
         }
         if (y < yMin) {
             if (startY - y + 1 <= 50) {
                 this.selectedArea.yMin = y;
                 this.selectedArea.yMax = startY;
-            } else {
-                //HIBA
             }
-
         }
         if (y > yMax || (y > yMin && y < yMax)) {
             if (y - startY + 1 <= 50) {
                 this.selectedArea.yMax = y;
                 this.selectedArea.yMin = startY;
-            } else {
-                //HIBA
             }
-
         }
     }
 
+    saveSelectedArea() {
+        if (this.selectMode !== 3) {
+            showAlert("You have to select an area, before saving it!", "alert");
+            return;
+        }
+
+        let nameInput = $("selectedAreaName").value;
+        if(nameeInput.length===0){
+            showAlert("You have to input a name before you can save the selected area!", "alert");
+        }
+
+        if (!this.Persistence.validateName(nameInput)) {
+            showAlert("There is already a pattern with this name!", "alert");
+            return;
+        }
+
+        let grid = this.modell.getSelectedArea();
+        this.Persistence.saveSelectedArea({
+            "name": nameInput,
+            "pattern": grid.map(arr => [...arr])
+        });
+
+        this.switchSelectMode();
+        $("selectedAreaName").value = "";
+    }
+
+    //RENDERING
     render() {
         let grid;
         let wholeGrid = this.modell.getGrid();
@@ -951,21 +957,16 @@ class View {
             }
         }
 
-        //console.log(grid);
         let currResolution = this.resolutions[this.zoom];
-        //console.log(currResolution);
 
         let currCols = this.width / currResolution;
-        //console.log(currCols);
         let currRows = this.height / currResolution;
-        //console.log(currRows);
 
         let state = this.modell.state;
 
         for (let col = 0; col < currCols; col++) {
             for (let row = 0; row < currRows; row++) {
                 const cell = grid[col + this.renderStartX][row + this.renderStartY];
-                //console.log(cell);
                 if (cell !== undefined) {
                     this.ctx.beginPath();
                     this.ctx.rect(col * currResolution, row * currResolution, currResolution, currResolution);
@@ -995,7 +996,6 @@ class View {
     renderSelect() { // selected area renderelése, amennyiben létezik
 
         if (!this.modell.getSelectedArea()) return;
-        debugger;
 
         let grid = this.modell.getSelectedArea();
         let sizeX = grid.length;
@@ -1087,7 +1087,6 @@ class View {
     }
 
     start() {
-        this.modell.start();
         this.render();
         this.renderSelect();
         this.animate();
@@ -1222,9 +1221,10 @@ class Persistence {
         this.renderList();
     }
 
-    validateName(name){
-        for(let i=0;i<this.patternList.length;i++){
-            if(this.patternList[i].name===name){
+    validateName(name) {
+        debugger;
+        for (let i = 0; i < this.patternList.length; i++) {
+            if (this.patternList[i].name === name) {
                 return false;
             }
         }
@@ -1267,20 +1267,22 @@ class MainController {
 
         $('exportButton').addEventListener('click', () => this.openExportModal());
         $('importButton').addEventListener('click', () => this.openImportModal());
+        $('helpButton').addEventListener('click',()=>this.openHelpModal());
 
         $('ExportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ExportModal').style.display = 'none' });
         $('ImportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ImportModal').style.display = 'none' });
+        $('HelpModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('HelpModal').style.display = 'none' });
 
         $('copyToClipBoardButton').addEventListener('click', () => this.copyToClipBoard());
         $('importModalButton').addEventListener('click', () => this.importState());
-        $('importSelect').addEventListener('change',()=>this.importSelectHandler());
+        $('importSelect').addEventListener('change', () => this.importSelectHandler());
 
 
         //hideitems
         $('patternModeDisplay').style.display = "none";
 
 
-        showAlert("Welcome! To start a new game, chose New->Empty / New->Random, or import a previously exported gamestate!", "tip");
+        showAlert("Welcome! To start a new game, chose New->Empty / New->Random, or import a previously exported gamestate! For further information click Help!", "tip");
     }
 
     startGame(gameType) {
@@ -1318,9 +1320,14 @@ class MainController {
     }
 
     openImportModal() {
-        $('hashImport').value="";
+        $('hashImport').value = "";
         this.fetchExports();
         let element = $('ImportModal');
+        element.style.display = 'block';
+    }
+
+    openHelpModal(){
+        let element = $('HelpModal');
         element.style.display = 'block';
     }
 
@@ -1332,44 +1339,44 @@ class MainController {
             .then(data => {
                 for (let i = 0; i < data.length; i++) {
                     let iOption = document.createElement('option');
-                    iOption.value=data[i].name;
-                    iOption.innerHTML=data[i].name;
+                    iOption.value = data[i].name;
+                    iOption.innerHTML = data[i].name;
                     $("importSelect").appendChild(iOption);
                 }
             });
     }
 
-    importSelectHandler(){
-        if($('importSelect').value==="Custom"){
-            $('hashImport').readOnly="false";
-        }else{
-            $('hashImport').readOnly="true";
+    importSelectHandler() {
+        if ($('importSelect').value === "Custom") {
+            $('hashImport').readOnly = "false";
+        } else {
+            $('hashImport').readOnly = "true";
             fetch('exports.json')
-            .then(response => response.json())
-            .then(data => {
-                for (let i = 0; i < data.length; i++) {
-                    if(data[i].name===$('importSelect').value){
-                        $('hashImport').value=data[i].code;
+                .then(response => response.json())
+                .then(data => {
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i].name === $('importSelect').value) {
+                            $('hashImport').value = data[i].code;
+                        }
                     }
-                }
-            });
+                });
         }
     }
 
     importState() {
         let gridString = $('hashImport').value;
         let stringDecoded = decode_utf8(gridString);
-        stringDecoded=lzw_decode(stringDecoded);
-        let invalidFlag=0;
-        if(stringDecoded.length!==200000) invalidFlag=1;
-        for(let i=0;i<stringDecoded.length;i++){
-            if(stringDecoded[i]!=='0' &&stringDecoded[i]!=='1'){
-                invalidFlag=1;
+        stringDecoded = lzw_decode(stringDecoded);
+        let invalidFlag = 0;
+        if (stringDecoded.length !== 200000) invalidFlag = 1;
+        for (let i = 0; i < stringDecoded.length; i++) {
+            if (stringDecoded[i] !== '0' && stringDecoded[i] !== '1') {
+                invalidFlag = 1;
                 break;
-            } 
+            }
         }
-        if(invalidFlag===1){
-            showAlert("The given import codes's format was invalid!",'alert');
+        if (invalidFlag === 1) {
+            showAlert("The given import codes's format was invalid!", 'alert');
             return;
         }
 
@@ -1390,7 +1397,7 @@ class MainController {
         } else {
             this.View.reset('blank');
         }
-        
+
         this.View.modell.importGrid(gridString);
 
         $('ImportModal').style.display = 'none'

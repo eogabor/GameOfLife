@@ -42,7 +42,21 @@ const
 		if(type==="range"){
             rangeV.value=range.value;
         }else{
-            range.value=rangeV.value;
+            let value=parseInt(rangeV.value);
+            if(!Number.isInteger(value)){
+                rangeV.value=11;
+                return;
+            }
+            if(rangeV.value<1){
+                range.value=1;
+                rangeV.value=1;
+            }else if(rangeV.value>20){
+                range.value=20;
+                rangeV.value=20;
+            }else{
+                range.value=rangeV.value;
+            }
+            
         }
 	};
 document.addEventListener("DOMContentLoaded", setValue("range"));
