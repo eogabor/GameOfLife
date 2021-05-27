@@ -245,7 +245,7 @@ class Modell {
 
             $('startButton').style.display = "inline-block";
             $('stopButton').style.display = "none";
-            $("statusIcon").src = "stoppedStatus.png";
+            $("statusIcon").src = "imgs/stoppedStatus.png";
             $('statusDisplay').innerHTML = "STOPPED";
         }
         if(buttonName==="STOP"){
@@ -254,7 +254,7 @@ class Modell {
 
             $('startButton').style.display = "none";
             $('stopButton').style.display = "inline-block";
-            $("statusIcon").src = "runningStatus.png";
+            $("statusIcon").src = "imgs/runningStatus.png";
             $('statusDisplay').innerHTML = "RUNNING"
         }
     }
@@ -433,15 +433,17 @@ class View {
         this.resolutions = [2, 4, 8, 20, 40, 100]; //ezek a felbontások osztják fel optimálisan a 1000*800 as fő megjelenítőt, nagyítási szintenként
 
         this.canvas = canvas;
-        this.modell = new Modell(500, 400, gameType);//A legkisebb felbontásban pont ennyi oszlop és sor tölti ki a fő megjelenítőt
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
+        
 
         this.selectCanvas = selectCanvas;
         this.selectctx = this.selectCanvas.getContext('2d');
         this.selectCanvas.width = 300;
         this.selectCanvas.height = 300;
+
+        this.modell = new Modell(500, 400, gameType);//A legkisebb felbontásban pont ennyi oszlop és sor tölti ki a fő megjelenítőt
 
         this.height = height;
         this.width = width;
@@ -593,7 +595,6 @@ class View {
     }
 
     moveView(e) {
-        debugger;
         this.setReDrawFlag();
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
@@ -639,7 +640,7 @@ class View {
             return;
         }
 
-        this.refreshMousePosition(this.canvas,e)
+        this.refreshMousePosition(this.canvas,e);
         const x = this.mouseX;
         const y = this.mouseY;
 
@@ -739,7 +740,6 @@ class View {
     }
 
     patternModeOn(e) {
-        debugger;
         if (this.modell.state !== 0 || this.selectMode !== 0) {
             showAlert("You must stop the simulation, to put on a pattern.", "warning")
             return;//alert hogy állítsa meg a kijelöléshez
@@ -757,17 +757,11 @@ class View {
         $('patternModeDisplay').style.display = "block";
     }
 
-    patternHandler = (e) => this.movePattern(this.canvas, e);
+    patternHandler = () => this.movePattern();
 
-    movePattern(canvas, e) {
-        let currResolution = this.resolutions[this.zoom];
-
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
-
-        this.patternData.startPointX = x;
-        this.patternData.startPointY = y;
+    movePattern() {
+        this.patternData.startPointX = this.mouseX;
+        this.patternData.startPointY = this.mouseY;
     }
 
     switchSelectMode() {
@@ -808,15 +802,13 @@ class View {
         $('selectButton').style.backgroundColor = '#81bbda';
     }
 
-    canvasSelectClick(canvas, e) {
+    canvasSelectClick(e) {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode === 0) return; //Csak álló állapotban lehessen kijelölni, ha select módban vagyunk
         if (this.selectMode === 1) {
-            let currResolution = this.resolutions[this.zoom];
-
-            const rect = canvas.getBoundingClientRect();
-            const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-            const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+            this.refreshMousePosition(this.canvas,e)
+            const x = this.mouseX;
+            const y = this.mouseY;
 
             this.selectedArea.xMin = x;
             this.selectedArea.xMax = x;
@@ -837,14 +829,11 @@ class View {
     }
 
     //Hogy le lehessen venni az event listenert
-    selectHandler = (e) => this.dragSelect(this.canvas, e);
+    selectHandler = (e) => this.dragSelect();
 
-    dragSelect(canvas, e) {
-        let currResolution = this.resolutions[this.zoom];
-
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor(((e.clientX - rect.left) / currResolution) + this.renderStartX);
-        const y = Math.floor(((e.clientY - rect.top) / currResolution) + this.renderStartY);
+    dragSelect() {
+        const x = this.mouseX;
+        const y = this.mouseY;
 
         let xMin = this.selectedArea.xMin;
         let xMax = this.selectedArea.xMax;
@@ -1222,7 +1211,6 @@ class Persistence {
     }
 
     validateName(name) {
-        debugger;
         for (let i = 0; i < this.patternList.length; i++) {
             if (this.patternList[i].name === name) {
                 return false;
@@ -1286,7 +1274,6 @@ class MainController {
     }
 
     startGame(gameType) {
-        debugger;
         if (this.state === 0) {
             this.View = new View(this.mainCanvas, 1000, 800, this.secondaryCanvas, gameType);
             //enable controls

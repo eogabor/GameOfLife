@@ -3,35 +3,35 @@ function $(elementID){
 }
 //UP BAR
 $("moveUpBar").addEventListener('mouseenter',()=>{
-    $("moveUpIcon").src="moveUpArrowHover.png";
+    $("moveUpIcon").src="imgs/moveUpArrowHover.png";
 })
 
 $("moveUpBar").addEventListener('mouseleave',()=>{
-    $("moveUpIcon").src="moveUpArrow.png";
+    $("moveUpIcon").src="imgs/moveUpArrow.png";
 })
 //LEFT BAR
 $("moveLeftBar").addEventListener('mouseenter',()=>{
-    $("moveLeftIcon").src="moveLeftArrowHover.png";
+    $("moveLeftIcon").src="imgs/moveLeftArrowHover.png";
 })
 
 $("moveLeftBar").addEventListener('mouseleave',()=>{
-    $("moveLeftIcon").src="moveLeftArrow.png";
+    $("moveLeftIcon").src="imgs/moveLeftArrow.png";
 })
 //RIGHT BAR
 $("moveRightBar").addEventListener('mouseenter',()=>{
-    $("moveRightIcon").src="moveRightArrowHover.png";
+    $("moveRightIcon").src="imgs/moveRightArrowHover.png";
 })
 
 $("moveRightBar").addEventListener('mouseleave',()=>{
-    $("moveRightIcon").src="moveRightArrow.png";
+    $("moveRightIcon").src="imgs/moveRightArrow.png";
 })
 //DOWN BAR
 $("moveDownBar").addEventListener('mouseenter',()=>{
-    $("moveDownIcon").src="moveDownArrowHover.png";
+    $("moveDownIcon").src="imgs/moveDownArrowHover.png";
 })
 
 $("moveDownBar").addEventListener('mouseleave',()=>{
-    $("moveDownIcon").src="moveDownArrow.png";
+    $("moveDownIcon").src="imgs/moveDownArrow.png";
 })
 
 //RANGE INPUT
