@@ -52,7 +52,7 @@
                         <button id="stepBackButton" class="controlButton">-</button>
                         <input id="stepValueInput" type="range" min="1" max="20" step="1">
                         <button id="stepForwardButton" class="controlButton">+</button>
-                        <input type="text" class="numberInput" id="stepValueDisplay">
+                        <input type="text" class="numberInput" id="stepValueDisplay"  onkeyup="this.value=this.value.replace(/[^\d]/,'')">
                     </div>
                     <div class="controlBlock">
                         <button id="slowDownButton" class="controlButton"><img class="controlIcon"

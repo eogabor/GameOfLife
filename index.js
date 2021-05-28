@@ -217,6 +217,7 @@ class Modell {
         if (this.state === 0 || this.state === undefined) {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
+            this.currentIterationsCounter = 0;
            this.setMainButton("STOP");
             $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
             this.dispatchReDrawEvent();
@@ -231,7 +232,6 @@ class Modell {
             this.state = 0;
             this.setMainButton("START");
 
-            this.currentIterationsCounter = 0;
             this.dispatchReDrawEvent();
         } else {
             showAlert("The simulation must be running before you can stop it!", "warning");
@@ -347,6 +347,11 @@ class Modell {
                     res = this.gridLog.pop();
                 }
                 this.iterationsCounter -= parameter;
+                this.currentIterationsCounter -= parameter;
+                if(this.currentIterationsCounter<0) this.currentIterationsCounter=0;
+                $('totalIterationsDisplay').innerHTML = this.iterationsCounter;
+                $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
+ 
                 return res;
             }
             showAlert("Not enough saved states left...", "warning");//HIBA ÜZENET
@@ -377,6 +382,7 @@ class Modell {
             }
 
             let returnValue = this.gridLogGet(stepSize);
+
             if (returnValue) {//ha visszatér valamivel akkor állítani kell a gridlogon
                 this.grid = returnValue.map(arr => [...arr]);
                 this.optimalizedGrid = returnValue.map(arr => [...arr]);
