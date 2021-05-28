@@ -501,7 +501,7 @@ class View {
         $('moveDownBar').addEventListener('click', (e) => this.moveView(e));
         $('moveRightBar').addEventListener('click', (e) => this.moveView(e));
         $('mainCanvas').addEventListener('click', (e) => this.canvasCellClick(e));
-        $('mainCanvas').addEventListener('click', (e) => this.canvasSelectClick(this.canvas, e));
+        $('mainCanvas').addEventListener('click', (e) => this.canvasSelectClick(e));
         $('selectButton').addEventListener('click', () => this.switchSelectMode());
         $("patternList").addEventListener('click', (e) => this.patternModeOn(e));
         $("stopPattern").addEventListener('click', () => this.patternModeOff());
@@ -771,6 +771,7 @@ class View {
     }
 
     switchSelectMode() {
+        debugger;
         if (this.modell.state !== 0 || this.patternMode !== 0) {
             showAlert("You must stop the simulation, before entering select mode.", "warning")
             return;//alert hogy állítsa meg a kijelöléshez
@@ -809,6 +810,7 @@ class View {
     }
 
     canvasSelectClick(e) {
+        debugger;
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode === 0) return; //Csak álló állapotban lehessen kijelölni, ha select módban vagyunk
         if (this.selectMode === 1) {
@@ -835,7 +837,7 @@ class View {
     }
 
     //Hogy le lehessen venni az event listenert
-    selectHandler = (e) => this.dragSelect();
+    selectHandler = () => this.dragSelect();
 
     dragSelect() {
         const x = this.mouseX;
