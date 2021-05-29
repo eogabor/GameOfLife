@@ -1166,7 +1166,7 @@ class Persistence {
         if (selectedCategory === "All") {
             for (let i = 0; i < this.patternList.length; i++) {
                 let element = this.patternList[i];
-                if (!element.name.includes($("patternFilter").value)) continue;
+                if (!element.nametoLowerCase().includes($("patternFilter").valuetoLowerCase())) continue;
 
                 let iLi = document.createElement('li');
                 iLi.id = "listElement-" + element.name;
@@ -1187,7 +1187,7 @@ class Persistence {
             for (let i = 0; i < this.patternList.length; i++) {
                 let element = this.patternList[i];
                 if (element.categoryName !== selectedCategory) continue;
-                if (!element.name.includes($("patternFilter").value)) continue;
+                if (!element.nametoLowerCase().includes($("patternFilter").valuetoLowerCase())) continue;
 
                 let iLi = document.createElement('li');
                 iLi.id = "listElement-" + element.name;
