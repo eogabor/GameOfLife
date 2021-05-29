@@ -771,7 +771,6 @@ class View {
     }
 
     switchSelectMode() {
-        debugger;
         if (this.modell.state !== 0 || this.patternMode !== 0) {
             showAlert("You must stop the simulation, before entering select mode.", "warning")
             return;//alert hogy állítsa meg a kijelöléshez
@@ -810,7 +809,6 @@ class View {
     }
 
     canvasSelectClick(e) {
-        debugger;
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode === 0) return; //Csak álló állapotban lehessen kijelölni, ha select módban vagyunk
         if (this.selectMode === 1) {
@@ -883,7 +881,7 @@ class View {
         }
 
         let nameInput = $("selectedAreaName").value;
-        if(nameeInput.length===0){
+        if(nameInput.length===0){
             showAlert("You have to input a name before you can save the selected area!", "alert");
         }
 
