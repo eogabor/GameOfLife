@@ -601,11 +601,12 @@ class View {
     }
 
     moveView(e) {
+        debugger;
         this.setReDrawFlag();
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
 
-        let zoom = 10 - (2 * this.zoom);
+        let zoom = 11 - (2 * this.zoom);
 
         switch (e.target.id) {
             case "moveUpBar":
