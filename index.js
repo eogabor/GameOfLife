@@ -1319,6 +1319,7 @@ class MainController {
         }
         let element = $('ExportModal');
         element.style.display = 'block';
+        $('copyToClipBoardButton').innerHTML = "Copy to Clipboard!"
 
         $('hashExport').value = this.View.modell.exportGrid();
     }
