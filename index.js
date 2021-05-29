@@ -129,7 +129,7 @@ class Modell {
         this.iterationsCounter = 0;
         this.currentIterationsCounter = 0;
 
-        
+
 
         this.state = 0; //undefined=>még nem indult el a modell, 0=>modell álló helyzetben, 1=>modell mozgásban 
         this.speed = 4;
@@ -218,7 +218,7 @@ class Modell {
             this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             this.state = 1;
             this.currentIterationsCounter = 0;
-           this.setMainButton("STOP");
+            this.setMainButton("STOP");
             $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
             this.dispatchReDrawEvent();
         } else {
@@ -238,8 +238,8 @@ class Modell {
         }
     }
 
-    setMainButton(buttonName){
-        if(buttonName==="START"){
+    setMainButton(buttonName) {
+        if (buttonName === "START") {
             $('startButton').disabled = false;
             $('stopButton').disabled = true;
 
@@ -248,7 +248,7 @@ class Modell {
             $("statusIcon").src = "imgs/stoppedStatus.png";
             $('statusDisplay').innerHTML = "STOPPED";
         }
-        if(buttonName==="STOP"){
+        if (buttonName === "STOP") {
             $('startButton').disabled = true;
             $('stopButton').disabled = false;
 
@@ -270,16 +270,16 @@ class Modell {
     speedUp() {
         if (this.speed > 0) {
 
-            this.speed-=1;
+            this.speed -= 1;
             $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
             clearInterval(this.intervalID);
-            if(this.state===1){
+            if (this.state === 1) {
                 this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             }
             this.dispatchReDrawEvent();
         } else {
 
-            if(this.speed<=0){
+            if (this.speed <= 0) {
                 showAlert("You have reached maximum iteration speed!", "warning");
             }
         }
@@ -289,15 +289,15 @@ class Modell {
     slowDown() {
         if (this.speed < 8) {
 
-            this.speed+=1;
+            this.speed += 1;
             $("iterationSpeedDisplay").innerHTML = 9 - this.speed + "/9";
             clearInterval(this.intervalID);
-            if(this.state===1){
+            if (this.state === 1) {
                 this.intervalID = setInterval((() => this.nextGen()), this.speeds[this.speed]);
             }
             this.dispatchReDrawEvent();
         } else {
-            if(this.speed>=8){
+            if (this.speed >= 8) {
                 showAlert("You have reached minimal iteration speed!", "warning ");
             }
         }
@@ -348,10 +348,10 @@ class Modell {
                 }
                 this.iterationsCounter -= parameter;
                 this.currentIterationsCounter -= parameter;
-                if(this.currentIterationsCounter<0) this.currentIterationsCounter=0;
+                if (this.currentIterationsCounter < 0) this.currentIterationsCounter = 0;
                 $('totalIterationsDisplay').innerHTML = this.iterationsCounter;
                 $('currentIterationsDisplay').innerHTML = this.currentIterationsCounter;
- 
+
                 return res;
             }
             showAlert("Not enough saved states left...", "warning");//HIBA ÜZENET
@@ -442,7 +442,7 @@ class View {
         this.ctx = this.canvas.getContext('2d');
         this.canvas.width = width;
         this.canvas.height = height;
-        
+
 
         this.selectCanvas = selectCanvas;
         this.selectctx = this.selectCanvas.getContext('2d');
@@ -488,8 +488,8 @@ class View {
         this.userActions = [];
         this.redoArray = [];
 
-        this.mouseX=undefined;
-        this.mouseY=undefined;
+        this.mouseX = undefined;
+        this.mouseY = undefined;
 
         $('patternModeDisplay').style.display = "none";
         $("zoomLevelDisplay").innerHTML = 1 + this.zoom + "/6";
@@ -509,7 +509,7 @@ class View {
         $('redoButton').addEventListener('click', () => this.redoUserAction());
         $('saveSelectedAreaButton').addEventListener('click', () => this.saveSelectedArea());
 
-        $("mainCanvas").addEventListener('mousemove',(e)=>this.refreshMousePosition(this.canvas,e));
+        $("mainCanvas").addEventListener('mousemove', (e) => this.refreshMousePosition(this.canvas, e));
 
         this.modell.redrawEventTarget.addEventListener('redrawEvent', () => this.setReDrawFlag());
     }
@@ -547,7 +547,7 @@ class View {
 
     }
 
-    refreshMousePosition(canvas,e){
+    refreshMousePosition(canvas, e) {
         let currResolution = this.resolutions[this.zoom];
 
         const rect = canvas.getBoundingClientRect();
@@ -601,7 +601,6 @@ class View {
     }
 
     moveView(e) {
-        debugger;
         this.setReDrawFlag();
         let startPointX = this.renderStartX;
         let startPointY = this.renderStartY;
@@ -619,6 +618,18 @@ class View {
                 startPointX -= zoom;
                 break;
             case "moveRightBar":
+                startPointX += zoom;
+                break;
+            case "moveUpIcon":
+                startPointY -= zoom;
+                break;
+            case "moveDownIcon":
+                startPointY += zoom;
+                break;
+            case "moveLeftIcon":
+                startPointX -= zoom;
+                break;
+            case "moveRightIcon":
                 startPointX += zoom;
                 break;
         }
@@ -647,7 +658,7 @@ class View {
             return;
         }
 
-        this.refreshMousePosition(this.canvas,e);
+        this.refreshMousePosition(this.canvas, e);
         const x = this.mouseX;
         const y = this.mouseY;
 
@@ -695,7 +706,7 @@ class View {
         }
 
         if (this.userActions.length === 0) {
-            showAlert("No more saved actions left.","warning");
+            showAlert("No more saved actions left.", "warning");
             return;
         }
 
@@ -786,7 +797,7 @@ class View {
         }
     }
 
-    selectModeOff(){
+    selectModeOff() {
         if (this.selectMode === 2 || this.selectMode === 3) {
             $('mainCanvas').removeEventListener('mousemove', this.selectHandler);
 
@@ -813,7 +824,7 @@ class View {
         let modellState = this.modell.state;
         if (modellState !== 0 || this.selectMode === 0) return; //Csak álló állapotban lehessen kijelölni, ha select módban vagyunk
         if (this.selectMode === 1) {
-            this.refreshMousePosition(this.canvas,e)
+            this.refreshMousePosition(this.canvas, e)
             const x = this.mouseX;
             const y = this.mouseY;
 
@@ -882,7 +893,7 @@ class View {
         }
 
         let nameInput = $("selectedAreaName").value;
-        if(nameInput.length===0){
+        if (nameInput.length === 0) {
             showAlert("You have to input a name before you can save the selected area!", "alert");
         }
 
@@ -1127,7 +1138,6 @@ class Persistence {
     }
 
     deletePattern(elementName) {
-        debugger;
         for (let i = 0; i < this.patternList.length; i++) {
             if (this.patternList[i].name === elementName) {
                 this.patternList.splice(i, 1);
@@ -1262,7 +1272,7 @@ class MainController {
 
         $('exportButton').addEventListener('click', () => this.openExportModal());
         $('importButton').addEventListener('click', () => this.openImportModal());
-        $('helpButton').addEventListener('click',()=>this.openHelpModal());
+        $('helpButton').addEventListener('click', () => this.openHelpModal());
 
         $('ExportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ExportModal').style.display = 'none' });
         $('ImportModal').getElementsByTagName('span')[0].addEventListener('click', () => { $('ImportModal').style.display = 'none' });
@@ -1320,7 +1330,7 @@ class MainController {
         element.style.display = 'block';
     }
 
-    openHelpModal(){
+    openHelpModal() {
         let element = $('HelpModal');
         element.style.display = 'block';
     }

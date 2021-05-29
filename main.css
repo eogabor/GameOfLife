@@ -79,6 +79,8 @@ table {
     text-align: center;
     padding: 2px 16px;
     text-decoration: none;
+    cursor: pointer;
+    user-select: none;
 }
 
 #menuBar li:hover {
@@ -128,6 +130,8 @@ table {
     overflow: hidden;
     display: flex;
     justify-content: center;
+    cursor: pointer;
+    user-select: none;
 }
 
 .moveBar:hover {
@@ -138,7 +142,6 @@ table {
 .moveUpBar {
     grid-area: topBar;
     border-bottom: 1px solid black;
-    user-select: none;
 }
 
 .moveUpBar:hover {
