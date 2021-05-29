@@ -298,7 +298,7 @@ class Modell {
             this.dispatchReDrawEvent();
         } else {
             if (this.speed >= 8) {
-                showAlert("You have reached minimal iteration speed!", "warning ");
+                showAlert("You have reached minimal iteration speed!", "warning");
             }
         }
 
